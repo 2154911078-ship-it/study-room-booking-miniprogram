@@ -1,0 +1,73 @@
+/* pages/messages */
+
+.msg-page {
+  padding: 24rpx 24rpx 60rpx;
+}
+.msg-head {
+  padding: 4rpx 8rpx 24rpx;
+}
+
+.msg-item {
+  background: #fff;
+  border-radius: var(--r-lg);
+  padding: 26rpx 28rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 6rpx 20rpx rgba(31, 36, 48, 0.05);
+}
+.item-hover {
+  background: #fafbfe;
+}
+.mi-top {
+  gap: 16rpx;
+}
+.mi-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--c-text);
+}
+.mi-content {
+  margin-top: 14rpx;
+  font-size: 26rpx;
+  color: var(--c-text-sub);
+  line-height: 1.7;
+}
+.mi-clamp {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.mi-open {
+  /* 展开全文：行距略增 */
+  color: var(--c-text);
+}
+.mi-foot {
+  margin-top: 14rpx;
+}
+.mi-link {
+  font-size: 24rpx;
+}
+
+.load-more {
+  padding: 24rpx 0 8rpx;
+  font-size: 24rpx;
+  color: var(--c-text-weak);
+}
+.loading-block {
+  padding: 160rpx 0;
+  gap: 16rpx;
+}
+.spinner {
+  width: 34rpx;
+  height: 34rpx;
+  border: 4rpx solid #d7deef;
+  border-top-color: var(--c-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

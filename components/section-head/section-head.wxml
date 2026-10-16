@@ -1,0 +1,8 @@
+<view class="section-head flex-between">
+  <view class="flex">
+    <view class="bar"></view>
+    <view class="title">{{title}}</view>
+    <view class="sub" wx:if="{{subtitle}}">{{subtitle}}</view>
+  </view>
+  <view class="more" wx:if="{{moreText}}" bindtap="onMore">{{moreText}}</view>
+</view>

@@ -1,0 +1,127 @@
+<!-- 自习室详情：接收列表页传入的 id → 请求详情接口 → 日期/时段/座位三级联动选择 → 提交预约 -->
+<view class="detail-page" wx:if="{{room}}">
+  <image class="cover" src="{{room.cover}}" mode="aspectFill" lazy-load />
+
+  <view class="head-card">
+    <view class="flex-between">
+      <view class="t-title flex-1 ellipsis">{{room.name}}</view>
+      <view class="tag {{statusMeta.cls}}">{{statusMeta.text}}</view>
+    </view>
+    <view class="t-sub line">📍 {{room.campus}} · {{room.building}} · {{room.floor}}</view>
+    <view class="t-sub line">🕐 开放 {{room.openText}} · 容纳 {{room.capacity}} 人</view>
+    <view class="tags">
+      <view class="tag" wx:for="{{room.tags}}" wx:key="*this">{{item}}</view>
+    </view>
+    <view class="desc">{{room.desc}}</view>
+    <view class="notice">📢 {{room.notice}}</view>
+  </view>
+
+  <!-- 日期选择（未来 7 天横向滚动） -->
+  <view class="sec">
+    <section-head title="选择日期" subtitle="最多可约未来 7 天" />
+    <scroll-view class="date-scroll" scroll-x="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+      <view class="date-row">
+        <view
+          wx:for="{{dates}}"
+          wx:key="full"
+          class="date-chip {{dateIndex === index ? 'date-active' : ''}}"
+          data-index="{{index}}"
+          bindtap="onDateTap"
+        >
+          <view class="d-label">{{item.label}}</view>
+          <view class="d-md">{{item.md}}</view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 时段选择 -->
+  <view class="sec">
+    <section-head title="选择时段" subtitle="单次最长 6 小时" />
+    <view class="slot-label t-sub">开始时段</view>
+    <view class="slot-wrap">
+      <view
+        wx:for="{{starts}}"
+        wx:key="*this"
+        class="chip {{start === item ? 'chip-active' : ''}}"
+        data-slot="{{item}}"
+        bindtap="onStartTap"
+      >{{item}}</view>
+    </view>
+    <view class="slot-label t-sub">结束时段</view>
+    <view class="slot-wrap">
+      <view
+        wx:for="{{ends}}"
+        wx:key="*this"
+        class="chip {{end === item ? 'chip-active' : ''}}"
+        data-slot="{{item}}"
+        bindtap="onEndTap"
+      >{{item}}</view>
+    </view>
+    <view class="form-error" wx:if="{{slotError}}">{{slotError}}</view>
+  </view>
+
+  <!-- 座位平面图（CSS Grid 布局：座位数=容量，列数 5-8 自适应，由接口 seatCols 下发） -->
+  <view class="sec">
+    <section-head title="选择座位" subtitle="{{seats.length}} 席 · 该时段实时座位图" />
+    <view class="legend flex">
+      <view class="lg flex"><view class="lg-box lg-free"></view><text>空闲</text></view>
+      <view class="lg flex"><view class="lg-box lg-reserved"></view><text>已约</text></view>
+      <view class="lg flex"><view class="lg-box lg-mine"></view><text>我的</text></view>
+      <view class="lg flex"><view class="lg-box lg-maint"></view><text>停用</text></view>
+    </view>
+    <view class="seat-podium flex-center"><text class="t-weak">— 讲台 —</text></view>
+    <view class="seat-grid {{seatCols >= 7 ? 'seat-grid-dense' : ''}}" style="grid-template-columns: repeat({{seatCols}}, 1fr)">
+      <view
+        wx:for="{{seats}}"
+        wx:key="no"
+        class="seat seat-{{item.status}} {{selectedSeat === item.no ? 'seat-picked' : ''}}"
+        data-no="{{item.no}}"
+        data-status="{{item.status}}"
+        bindtap="pickSeat"
+      >
+        <text class="seat-no">{{item.no}}</text>
+      </view>
+    </view>
+    <view class="t-weak seat-tip">{{selectedSeat ? '已选 ' + selectedSeat + '，再次点击可取消' : '请点击绿色“空闲”座位进行选择'}}</view>
+  </view>
+
+  <!-- 备注（可选） -->
+  <view class="sec">
+    <section-head title="备注" subtitle="选填" />
+    <input
+      class="form-input"
+      placeholder="如：需要使用投影 / 靠过道"
+      maxlength="40"
+      value="{{remark}}"
+      bindinput="onRemarkInput"
+    />
+  </view>
+
+  <!-- 底部固定操作条 -->
+  <view class="fixed-bottom flex-between">
+    <view class="pick-info">
+      <view class="t-main {{selectedSeat ? '' : 't-weak'}}">{{selectedSeat ? "座位 " + selectedSeat : "尚未选择座位"}}</view>
+      <view class="t-weak">{{dates[dateIndex].full}} {{start}}-{{end}}{{duration ? " · 共 " + duration + " 小时" : ""}}</view>
+    </view>
+    <button
+      class="btn btn-primary submit-btn"
+      disabled="{{submitting || room.status !== 'open'}}"
+      bindtap="submit"
+    >{{room.status === 'maintenance' ? '维护中' : (submitting ? '提交中…' : '提交预约')}}</button>
+  </view>
+
+  <!-- 座位重新加载遮罩（hidden 控制，减少重复渲染） -->
+  <view class="seat-loading" hidden="{{!loadingSeats}}">
+    <view class="spinner"></view>
+  </view>
+</view>
+
+<view wx:elif="{{loadError}}" class="page-pad">
+  <empty-tip text="自习室信息加载失败" desc="请检查网络或后端服务是否启动" btn-text="重新加载" bind:action="retry" />
+</view>
+
+<view wx:else class="loading-block flex-center">
+  <view class="spinner"></view>
+  <text class="t-weak">加载中…</text>
+</view>

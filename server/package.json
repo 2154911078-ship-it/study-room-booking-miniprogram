@@ -1,0 +1,20 @@
+{
+  "name": "huizixi-server",
+  "version": "1.1.0",
+  "description": "慧自习小程序 Node.js 后端（原生 http 模块实现 REST API，数据持久化到 MySQL）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "db:init": "node init-db.js",
+    "db:reset": "node init-db.js --reset",
+    "db:check": "node init-db.js --check"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "mysql2": "^3.24.4"
+  }
+}

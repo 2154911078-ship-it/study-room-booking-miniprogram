@@ -1,0 +1,17 @@
+<view class="room-card {{layout === 'vertical' ? 'rc-v' : ''}}" bindtap="onTap" hover-class="room-card-hover" hover-stay-time="60">
+  <image class="cover" src="{{layout === 'vertical' ? (room.coverCard || room.cover) : room.cover}}" mode="aspectFill" lazy-load />
+  <view class="info">
+    <view class="flex-between">
+      <view class="name ellipsis">{{room.name}}</view>
+      <view class="tag {{statusMeta.cls}} rc-status">{{statusMeta.text}}</view>
+    </view>
+    <view class="loc ellipsis">{{room.campus}} · {{room.building}} {{room.floor}}</view>
+    <view class="tags">
+      <view class="tag tag-plain-item" wx:for="{{room.tags}}" wx:if="{{index < 3}}" wx:key="*this">{{item}}</view>
+    </view>
+    <view class="foot flex-between">
+      <view class="t-weak foot-l ellipsis">{{room.openText}} · 容纳 {{room.capacity}} 人</view>
+      <view class="free t-primary" wx:if="{{room.status === 'open'}}">空闲 {{room.free}} 座</view>
+    </view>
+  </view>
+</view>

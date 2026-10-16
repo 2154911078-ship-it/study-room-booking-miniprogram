@@ -1,0 +1,63 @@
+<!-- 自习室列表：搜索 + 校区筛选 + 下拉刷新(onPullDownRefresh) + 上拉加载更多(onReachBottom) -->
+<view class="rooms-page">
+  <view class="search-bar flex">
+    <view class="search-box2 flex flex-1">
+      <text class="search-ico">🔍</text>
+      <input
+        class="search-input flex-1"
+        placeholder="搜索自习室 / 教学楼"
+        placeholder-class="ph"
+        confirm-type="search"
+        value="{{inputKeyword}}"
+        bindinput="onKeywordInput"
+        bindconfirm="doSearch"
+      />
+      <view class="clear" wx:if="{{inputKeyword}}" catchtap="clearKeyword">✕</view>
+    </view>
+    <view class="search-btn" bindtap="doSearch">搜索</view>
+  </view>
+
+  <scroll-view class="chips-scroll" scroll-x="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+    <view class="chips-row">
+      <view
+        wx:for="{{campusList}}"
+        wx:key="*this"
+        class="chip {{campusIndex === index ? 'chip-active' : ''}}"
+        data-index="{{index}}"
+        bindtap="setCampus"
+      >{{item}}</view>
+    </view>
+  </scroll-view>
+
+  <view class="count-line t-weak" wx:if="{{!firstLoading}}">
+    共 {{total}} 间自习室{{keyword ? '（关键词：“' + keyword + '”）' : ''}}
+  </view>
+
+  <!-- 列表：图片懒加载 + wx:if 控制渲染 -->
+  <view class="list" wx:if="{{list.length > 0}}">
+    <view class="room-cell" wx:for="{{list}}" wx:key="id">
+      <room-card room="{{item}}" data-id="{{item.id}}" bind:select="goDetail" />
+    </view>
+
+    <view class="load-more flex-center" wx:if="{{loadingMore}}">
+      <view class="spinner"></view>
+      <text class="t-weak">正在加载…</text>
+    </view>
+    <view class="load-more flex-center" wx:elif="{{!hasMore}}">
+      <text class="t-weak">— 已经到底啦 —</text>
+    </view>
+  </view>
+
+  <view wx:elif="{{firstLoading}}" class="loading-block flex-center">
+    <view class="spinner"></view>
+    <text class="t-weak">正在加载自习室…</text>
+  </view>
+
+  <empty-tip
+    wx:else
+    text="没有找到符合条件的自习室"
+    desc="换个关键词或校区试试吧"
+    btn-text="重置筛选"
+    bind:action="resetFilter"
+  />
+</view>

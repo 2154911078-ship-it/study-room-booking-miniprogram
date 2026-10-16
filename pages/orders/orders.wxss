@@ -1,0 +1,121 @@
+/* pages/orders */
+
+.orders-page {
+  padding: 24rpx 24rpx 60rpx;
+}
+
+.tabs-scroll {
+  white-space: nowrap;
+  margin-bottom: 16rpx;
+}
+.chips-row {
+  display: inline-block;
+  padding: 4rpx 0;
+}
+.swipe-tip {
+  padding: 0 8rpx 16rpx;
+}
+
+/* 滑动删除条目 */
+.order-item {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  margin-bottom: 20rpx;
+  background: #eef0f5;
+}
+.swipe-actions {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+}
+.act {
+  width: 150rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 26rpx;
+}
+.act-view {
+  background: #7d8aa5;
+}
+.act-cancel {
+  background: var(--c-accent);
+}
+.act-del {
+  background: var(--c-danger);
+}
+.act-disabled {
+  background: #b6bdca;
+}
+.swipe-content {
+  position: relative;
+  z-index: 2;
+  background: #fff;
+  padding: 26rpx 28rpx;
+  transition: transform 0.24s ease;
+}
+.swipe-content.swiped {
+  transform: translateX(-300rpx);
+}
+.item-hover {
+  background: #fafbfe;
+}
+
+.oi-head {
+  padding-bottom: 18rpx;
+  border-bottom: 2rpx dashed var(--c-line);
+}
+.oi-name {
+  font-size: 30rpx;
+  font-weight: 700;
+  max-width: 420rpx;
+}
+.oi-body {
+  padding: 18rpx 0;
+}
+.oi-when {
+  flex: 1;
+  min-width: 0;
+}
+.oi-date {
+  font-size: 28rpx;
+  color: var(--c-text);
+  font-weight: 600;
+  margin-bottom: 6rpx;
+}
+.oi-hours {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  background: var(--c-primary-weak);
+  color: var(--c-primary);
+  font-size: 28rpx;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.oi-foot {
+  padding-top: 14rpx;
+  border-top: 2rpx solid var(--c-line);
+}
+
+.loading-block {
+  padding: 160rpx 0;
+  gap: 16rpx;
+}
+.spinner {
+  width: 34rpx;
+  height: 34rpx;
+  border: 4rpx solid #d7deef;
+  border-top-color: var(--c-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

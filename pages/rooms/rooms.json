@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "自习室",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "room-card": "/components/room-card/room-card",
+    "empty-tip": "/components/empty-tip/empty-tip"
+  }
+}

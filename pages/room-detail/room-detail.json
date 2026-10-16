@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "自习室详情",
+  "usingComponents": {
+    "section-head": "/components/section-head/section-head",
+    "empty-tip": "/components/empty-tip/empty-tip"
+  }
+}

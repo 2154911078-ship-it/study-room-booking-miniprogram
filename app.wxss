@@ -1,0 +1,16 @@
+/**
+ * 全局样式入口
+ * 统一字体 / 色彩 / 按钮 / 间距 的公共样式集中在 styles/common.wxss，
+ * 各页面仅需 @import 或直接复用其中的原子类，保证视觉一致。
+ */
+@import "./styles/common.wxss";
+
+page {
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-size: 28rpx;
+  line-height: 1.6;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    "PingFang SC", "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}

@@ -1,0 +1,360 @@
+/* ============================================================
+ * styles/common.wxss —— 全局公共样式（外部统一样式表）
+ * 统一：主题色彩、字体字号、按钮、卡片、间距、标签、表单
+ * 使用方式：app.wxss 中 @import，全部页面直接复用原子类
+ * ============================================================ */
+
+/* ---------- 1. 设计变量（主题色 / 字号 / 圆角 / 间距） ---------- */
+page {
+  /* 品牌色 */
+  --c-primary: #2f5bff;
+  --c-primary-deep: #1e43d8;
+  --c-primary-weak: #e8efff;
+  --c-accent: #ff8a3d;
+  --c-success: #22b573;
+  --c-warn: #ff9f2e;
+  --c-danger: #f04b4b;
+
+  /* 文字与线条 */
+  --c-text: #1f2430;
+  --c-text-sub: #5b6472;
+  --c-text-weak: #8a93a6;
+  --c-line: #e8ecf4;
+  --c-bg: #f4f6fa;
+  --c-white: #ffffff;
+
+  /* 圆角 */
+  --r-sm: 8rpx;
+  --r-md: 16rpx;
+  --r-lg: 24rpx;
+  --r-full: 999rpx;
+
+  /* 间距（8rpx 栅格） */
+  --sp-1: 8rpx;
+  --sp-2: 16rpx;
+  --sp-3: 24rpx;
+  --sp-4: 32rpx;
+  --sp-5: 48rpx;
+
+  /* 字号 */
+  --fs-xs: 22rpx;
+  --fs-sm: 26rpx;
+  --fs-md: 30rpx;
+  --fs-lg: 34rpx;
+  --fs-xl: 40rpx;
+  --fs-num: 48rpx;
+}
+
+/* ---------- 2. 通用容器 ---------- */
+.page-pad {
+  padding: var(--sp-3) var(--sp-3) 180rpx;
+  box-sizing: border-box;
+}
+
+.card {
+  background: var(--c-white);
+  border-radius: var(--r-lg);
+  padding: var(--sp-3);
+  box-shadow: 0 6rpx 20rpx rgba(31, 36, 48, 0.05);
+}
+
+.card + .card {
+  margin-top: var(--sp-3);
+}
+
+.divider {
+  height: 2rpx;
+  background: var(--c-line);
+  margin: var(--sp-2) 0;
+}
+
+/* ---------- 3. 文字 ---------- */
+.t-title {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--c-text);
+}
+.t-main {
+  font-size: var(--fs-md);
+  color: var(--c-text);
+}
+.t-sub {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.t-weak {
+  font-size: var(--fs-xs);
+  color: var(--c-text-weak);
+}
+.t-primary {
+  color: var(--c-primary);
+}
+.t-danger {
+  color: var(--c-danger);
+}
+.t-success {
+  color: var(--c-success);
+}
+.t-num {
+  font-size: var(--fs-num);
+  font-weight: 700;
+  color: var(--c-primary);
+  line-height: 1.2;
+}
+.ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ---------- 4. Flex / Grid 布局工具 ---------- */
+.flex {
+  display: flex;
+  align-items: center;
+}
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.flex-1 {
+  flex: 1;
+  min-width: 0;
+}
+.wrap-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-3);
+}
+
+/* ---------- 5. 按钮 ---------- */
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+  padding: 0 var(--sp-4);
+  border-radius: var(--r-full);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  line-height: 1;
+  border: none;
+  transition: opacity 0.15s ease;
+}
+.btn::after {
+  border: none; /* 去掉 button 组件默认描边 */
+}
+.btn:active {
+  opacity: 0.75;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #4c7cff, var(--c-primary-deep));
+  color: var(--c-white);
+  box-shadow: 0 10rpx 24rpx rgba(47, 91, 255, 0.28);
+}
+.btn-ghost {
+  background: var(--c-white);
+  color: var(--c-primary);
+  border: 2rpx solid var(--c-primary);
+}
+.btn-plain {
+  background: var(--c-primary-weak);
+  color: var(--c-primary);
+}
+.btn-danger-plain {
+  background: #ffecec;
+  color: var(--c-danger);
+}
+.btn-block {
+  width: 100%;
+}
+.btn-mini {
+  height: 56rpx;
+  font-size: var(--fs-sm);
+  padding: 0 var(--sp-3);
+}
+.btn[disabled],
+.btn.disabled {
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+/* 底部固定操作条（含 iPhone 安全区适配） */
+.fixed-bottom {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: var(--sp-2) var(--sp-3);
+  padding-bottom: calc(var(--sp-2) + constant(safe-area-inset-bottom));
+  padding-bottom: calc(var(--sp-2) + env(safe-area-inset-bottom));
+  background: var(--c-white);
+  box-shadow: 0 -6rpx 20rpx rgba(31, 36, 48, 0.06);
+  z-index: 90;
+}
+
+/* ---------- 6. 标签 / 徽标 / 状态点 ---------- */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 40rpx;
+  padding: 0 16rpx;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-xs);
+  background: var(--c-primary-weak);
+  color: var(--c-primary);
+  margin-right: var(--sp-1);
+}
+.tag-warn {
+  background: #fff3e0;
+  color: var(--c-warn);
+}
+.tag-success {
+  background: #e2f7ec;
+  color: var(--c-success);
+}
+.tag-off {
+  background: #eef0f5;
+  color: var(--c-text-weak);
+}
+.tag-danger {
+  background: #ffecec;
+  color: var(--c-danger);
+}
+
+.badge {
+  min-width: 32rpx;
+  height: 32rpx;
+  padding: 0 8rpx;
+  border-radius: var(--r-full);
+  background: var(--c-danger);
+  color: var(--c-white);
+  font-size: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+.dot-unread {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: var(--c-danger);
+  flex-shrink: 0;
+}
+
+/* ---------- 7. 筛选 chip（自习室列表 / 预约状态 tab 通用） ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 60rpx;
+  padding: 0 var(--sp-3);
+  margin-right: var(--sp-2);
+  border-radius: var(--r-full);
+  background: var(--c-white);
+  color: var(--c-text-sub);
+  font-size: var(--fs-sm);
+  border: 2rpx solid var(--c-line);
+}
+.chip-active {
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+  color: var(--c-white);
+  font-weight: 600;
+}
+
+/* ---------- 8. 表单 ---------- */
+.form-item {
+  margin-bottom: var(--sp-3);
+}
+.form-label {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  margin-bottom: var(--sp-1);
+}
+.form-input {
+  width: 100%;
+  height: 88rpx;
+  box-sizing: border-box;
+  padding: 0 var(--sp-3);
+  background: #f7f8fc;
+  border: 2rpx solid var(--c-line);
+  border-radius: var(--r-md);
+  font-size: var(--fs-md);
+  color: var(--c-text);
+}
+.form-input-focus {
+  border-color: var(--c-primary);
+  background: var(--c-white);
+}
+.form-error {
+  margin-top: var(--sp-1);
+  font-size: var(--fs-xs);
+  color: var(--c-danger);
+}
+
+/* 自定义复选框（表单校验用） */
+.checkbox {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 8rpx;
+  border: 2rpx solid var(--c-line);
+  background: var(--c-white);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.checkbox-on {
+  border-color: var(--c-primary);
+  background: var(--c-primary);
+  position: relative;
+}
+.checkbox-on::after {
+  content: "";
+  position: absolute;
+  left: 10rpx;
+  top: 4rpx;
+  width: 10rpx;
+  height: 18rpx;
+  border: solid #fff;
+  border-width: 0 4rpx 4rpx 0;
+  transform: rotate(45deg);
+}
+
+/* ---------- 9. 空态 / 加载提示 ---------- */
+.empty-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 96rpx 0;
+}
+
+/* ---------- 10. 列表项通用 ---------- */
+.list-row {
+  display: flex;
+  align-items: center;
+  background: var(--c-white);
+  padding: var(--sp-3);
+  border-radius: var(--r-lg);
+}
+.list-row + .list-row {
+  margin-top: var(--sp-2);
+}
+.row-arrow::after {
+  content: "";
+  width: 16rpx;
+  height: 16rpx;
+  border-right: 4rpx solid var(--c-text-weak);
+  border-bottom: 4rpx solid var(--c-text-weak);
+  transform: rotate(-45deg);
+  flex-shrink: 0;
+}

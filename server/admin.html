@@ -1,0 +1,2106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>慧自习 · 校园自习室预约管理后台</title>
+<!--
+  ============================================================================
+  慧自习 · 管理后台（单文件、零外部依赖）
+  ----------------------------------------------------------------------------
+  使用方式：启动后端（node server/server.js）后，浏览器打开 127.0.0.1:3000
+  演示账号：admin / 123456      备用：staff01 / 123456
+  技术说明：原生 JS（ES5/ES6），无框架、无 CDN、无外链图片，所有样式与脚本内联。
+  代码结构（见文件末尾 script 中的分节注释）：
+    1 全局状态与常量   2 通用工具   3 接口封装   4 登录 / 登出
+    5 页签切换         6 概览       7 场地管理   8 预约管理
+    9 用户管理        10 弹窗       11 启动引导
+  ============================================================================
+-->
+<style>
+:root{
+  --pri:#2f5bff; --deep:#1e43d8; --bg:#f4f6fa; --txt:#1f2430; --sub:#5b6472;
+  --weak:#8a93a6; --line:#e8ecf4; --ok:#22b573; --warn:#ff9f2e; --bad:#f04b4b;
+}
+*{ margin:0; padding:0; box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+  background:var(--bg); color:var(--txt); font-size:14px; line-height:1.55;
+}
+a{ color:var(--pri); }
+input,select,textarea,button{ font-family:inherit; font-size:13px; color:var(--txt); }
+input,select,textarea{
+  width:100%; padding:7px 10px; border:1px solid var(--line); border-radius:9px;
+  background:#fff; outline:none; transition:border-color .15s,box-shadow .15s;
+}
+input:focus,select:focus,textarea:focus{ border-color:var(--pri); box-shadow:0 0 0 3px rgba(47,91,255,.12); }
+input:disabled,select:disabled,textarea:disabled{ background:#f5f7fb; color:var(--weak); }
+textarea{ resize:vertical; }
+label{ font-size:12px; color:var(--sub); }
+
+/* ---------------- 按钮 ---------------- */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  padding:8px 16px; border:1px solid transparent; border-radius:10px; cursor:pointer;
+  background:#f2f4f9; color:var(--pri); font-size:13px; transition:all .15s; white-space:nowrap;
+}
+.btn:hover{ filter:brightness(.97); }
+.btn:disabled{ opacity:.5; cursor:not-allowed; filter:none; }
+.btn-primary{ background:linear-gradient(135deg,var(--pri),var(--deep)); color:#fff; box-shadow:0 4px 12px rgba(47,91,255,.25); }
+.btn-ghost{ background:#fff; border-color:var(--line); color:var(--sub); }
+.btn-danger{ background:#ffecec; color:var(--bad); }
+.btn-sm{ padding:4px 10px; border-radius:8px; font-size:12px; }
+.btn-block{ width:100%; padding:11px 16px; font-size:15px; letter-spacing:2px; }
+
+/* ---------------- 登录页 ---------------- */
+.login-wrap{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+.login-card{
+  width:100%; max-width:400px; background:#fff; border-radius:18px; padding:30px 28px 26px;
+  box-shadow:0 18px 50px rgba(31,36,48,.12);
+}
+.login-brand{ display:flex; align-items:center; gap:12px; margin-bottom:22px; }
+.login-brand h1{ font-size:19px; letter-spacing:.5px; }
+.login-brand p{ font-size:12px; color:var(--weak); margin-top:2px; }
+.login-card .form-row{ margin-bottom:14px; }
+.login-card .form-row label{ display:block; margin-bottom:6px; }
+.login-err{
+  display:none; background:#ffecec; color:var(--bad); border-radius:10px;
+  padding:9px 14px; font-size:13px; margin-bottom:14px;
+}
+.login-hint{
+  margin-top:18px; padding-top:14px; border-top:1px dashed var(--line);
+  font-size:12px; color:var(--weak); line-height:1.8; text-align:center;
+}
+.login-hint b{ color:var(--pri); font-weight:600; }
+
+/* ---------------- 顶栏 / 页签 ---------------- */
+.topbar{
+  background:linear-gradient(135deg,var(--pri),var(--deep)); color:#fff;
+  padding:16px 26px; display:flex; align-items:center; gap:14px;
+}
+.logo{
+  display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px;
+  border-radius:13px; background:linear-gradient(135deg,#4d74ff,#1b3fc4); flex:0 0 auto;
+  box-shadow:0 6px 16px rgba(47,91,255,.3);
+}
+.topbar .logo{ background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.28); box-shadow:none; }
+.logo svg{ display:block; }
+.topbar h1{ font-size:19px; letter-spacing:1px; }
+.topbar .sub{ font-size:12px; opacity:.82; margin-top:2px; }
+.topbar .who{ margin-left:auto; text-align:right; font-size:12px; line-height:1.5; }
+.topbar .who .name{ font-size:14px; font-weight:600; }
+.topbar .who .role{ opacity:.85; }
+.tabs{
+  background:#fff; border-bottom:1px solid var(--line); padding:0 26px;
+  display:flex; gap:8px; position:sticky; top:0; z-index:20; overflow-x:auto;
+}
+.tab{
+  background:none; border:0; border-bottom:3px solid transparent; cursor:pointer;
+  padding:13px 16px; font-size:14px; color:var(--sub); white-space:nowrap;
+}
+.tab:hover{ color:var(--pri); }
+.tab.active{ color:var(--pri); font-weight:600; border-bottom-color:var(--pri); }
+
+/* ---------------- 主体布局 ---------------- */
+main{ max-width:1320px; margin:22px auto 40px; padding:0 24px; }
+.box{
+  background:#fff; border-radius:14px; padding:18px 20px;
+  box-shadow:0 4px 16px rgba(31,36,48,.05); margin-bottom:20px;
+}
+.box-head{ display:flex; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+.box-head h2{ font-size:15px; display:flex; align-items:center; gap:9px; }
+.box-head h2::before{
+  content:""; width:4px; height:16px; border-radius:2px;
+  background:linear-gradient(180deg,var(--pri),var(--deep));
+}
+.box-head .cnt{ font-size:12px; color:var(--weak); font-weight:400; }
+.box-hint{ font-size:12px; color:var(--weak); line-height:1.7; margin:-6px 0 12px; }
+.box-actions{ margin-left:auto; display:flex; gap:8px; flex-wrap:wrap; }
+.two-col{ display:grid; grid-template-columns:1.35fr 1fr; gap:20px; align-items:start; }
+@media (max-width:960px){ .two-col{ grid-template-columns:1fr; } }
+
+/* ---------------- 统计卡片 ---------------- */
+.cards{ display:grid; grid-template-columns:repeat(auto-fit,minmax(168px,1fr)); gap:16px; margin-bottom:20px; }
+.card{ background:#fff; border-radius:14px; padding:16px 18px; box-shadow:0 4px 16px rgba(31,36,48,.05); }
+.card .num{ font-size:28px; font-weight:700; color:var(--pri); line-height:1.2; }
+.card .lab{ font-size:12px; color:var(--weak); margin-top:4px; }
+.card.c-ok .num{ color:var(--ok); }
+.card.c-warn .num{ color:var(--warn); }
+.card.c-bad .num{ color:var(--bad); }
+.card.c-weak .num{ color:var(--weak); }
+
+/* ---------------- 表格 ---------------- */
+.table-wrap{ overflow-x:auto; }
+table{ width:100%; border-collapse:collapse; font-size:13px; }
+th,td{ text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); white-space:nowrap; }
+th{ color:var(--weak); font-weight:500; background:#fafbfe; }
+tbody tr:hover td{ background:#f7f9ff; }
+tbody tr.ph:hover td{ background:none; }
+tr.ph td{ text-align:center; color:var(--weak); padding:24px 0; }
+td.mono{ font-family:Consolas,"Courier New",monospace; letter-spacing:.5px; }
+.row-acts{ display:flex; gap:6px; }
+
+/* ---------------- 状态胶囊 ---------------- */
+.pill{ display:inline-block; padding:2px 10px; border-radius:99px; font-size:12px; white-space:nowrap; }
+.p-open{ background:#e2f7ec; color:var(--ok); }
+.p-full{ background:#fff3e0; color:var(--warn); }
+.p-maintenance{ background:#eef0f5; color:var(--weak); }
+.p-pending{ background:#fff3e0; color:var(--warn); }
+.p-using{ background:#e2f7ec; color:var(--ok); }
+.p-done{ background:#eef0f5; color:var(--weak); }
+.p-canceled{ background:#ffecec; color:var(--bad); }
+.p-user{ background:#e8efff; color:var(--pri); }
+.p-none{ background:#f2f4f9; color:var(--weak); }
+/* 自习室状态下拉：直接复用胶囊配色做快捷切换 */
+select.pill{ width:auto; padding:3px 6px; border:0; border-radius:99px; font-size:12px; cursor:pointer; }
+select.pill:focus{ box-shadow:0 0 0 3px rgba(47,91,255,.18); }
+
+/* ---------------- 筛选区 ---------------- */
+.filters{ display:flex; flex-wrap:wrap; gap:12px 14px; align-items:flex-end; }
+.field{ display:flex; flex-direction:column; gap:5px; min-width:140px; }
+.field.full{ grid-column:1 / -1; min-width:100%; }
+.field label{ font-size:12px; color:var(--sub); }
+.field .req{ color:var(--bad); font-weight:400; }
+.field .mini-btns{ display:flex; gap:6px; }
+.filter-acts{ display:flex; gap:8px; align-items:center; }
+.checkin-bar{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  background:#f7f9ff; border:1px solid #e3eaff; border-radius:12px; padding:12px 14px; margin-bottom:16px;
+}
+.checkin-bar input{ width:180px; letter-spacing:2px; text-align:center; font-family:Consolas,"Courier New",monospace; }
+.checkin-bar .hint{ font-size:12px; color:var(--weak); }
+
+/* ---------------- 汇总条 ---------------- */
+.sum-strip{ display:flex; flex-wrap:wrap; gap:10px 22px; padding:12px 16px; background:#fafbfe; border:1px solid var(--line); border-radius:12px; margin-bottom:14px; }
+.sum-strip .it{ font-size:12px; color:var(--weak); }
+.sum-strip .it b{ display:block; font-size:16px; color:var(--txt); font-weight:600; margin-top:2px; }
+.sum-strip .it.ok b{ color:var(--ok); } .sum-strip .it.warn b{ color:var(--warn); } .sum-strip .it.bad b{ color:var(--bad); }
+
+/* ---------------- 分页 ---------------- */
+.pager{ display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-top:14px; font-size:13px; color:var(--sub); flex-wrap:wrap; }
+
+/* ---------------- 消息 / 会话 ---------------- */
+.msg{ border-left:3px solid var(--line); padding:6px 12px; margin-bottom:10px; }
+.msg.unread{ border-left-color:var(--bad); }
+.msg b{ font-size:13px; }
+.msg p{ font-size:12px; color:var(--sub); margin-top:2px; }
+.msg time{ font-size:11px; color:var(--weak); }
+.sess-list{ display:flex; flex-wrap:wrap; gap:6px; }
+
+/* 顶栏消息图标：点击查看最近消息，未读角标 */
+.icon-btn{
+  position:relative; flex:0 0 auto; width:40px; height:40px; border-radius:12px; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.26); color:#fff;
+  transition:background .15s ease;
+}
+.icon-btn:hover{ background:rgba(255,255,255,.28); }
+.icon-btn:active{ transform:scale(.96); }
+.icon-btn .badge{
+  position:absolute; top:-6px; right:-6px; min-width:18px; height:18px; padding:0 5px;
+  border-radius:9px; background:var(--bad); color:#fff; font-size:11px; font-weight:700;
+  line-height:18px; text-align:center; box-shadow:0 0 0 2px var(--pri);
+}
+.msg-scroll{ max-height:56vh; overflow:auto; padding-right:6px; }
+.modal-tip .unread-tag{ color:var(--bad); font-weight:600; }
+
+/* ---------------- 弹窗 ---------------- */
+.mask{
+  display:none; position:fixed; top:0; right:0; bottom:0; left:0; z-index:60;
+  background:rgba(20,24,36,.45); padding:24px; overflow:auto;
+}
+.mask.show{ display:flex; align-items:flex-start; justify-content:center; }
+.modal{
+  background:#fff; border-radius:16px; width:100%; max-width:760px; margin:auto;
+  box-shadow:0 24px 60px rgba(15,20,35,.28);
+}
+.modal-head{ display:flex; align-items:center; gap:12px; padding:18px 22px; border-bottom:1px solid var(--line); }
+.modal-head h3{ font-size:16px; }
+.modal-head .x{
+  margin-left:auto; background:none; border:0; font-size:22px; line-height:1; color:var(--weak);
+  cursor:pointer; padding:0 4px;
+}
+.modal-body{ padding:18px 22px; }
+.modal-foot{ display:flex; justify-content:flex-end; gap:10px; padding:14px 22px; border-top:1px solid var(--line); }
+.form-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+@media (max-width:640px){ .form-grid{ grid-template-columns:1fr; } }
+.modal-err{ display:none; margin-top:14px; background:#ffecec; color:var(--bad); border-radius:10px; padding:9px 14px; font-size:13px; }
+.modal-tip{ font-size:12px; color:var(--weak); margin-top:8px; }
+
+/* ---------------- Toast ---------------- */
+.toasts{ position:fixed; right:20px; bottom:20px; z-index:90; display:flex; flex-direction:column; gap:10px; align-items:flex-end; }
+.toast{
+  background:#1f2430; color:#fff; padding:10px 16px; border-radius:10px; font-size:13px;
+  box-shadow:0 10px 26px rgba(15,20,35,.3); max-width:360px; animation:tin .18s ease-out;
+}
+.toast.t-ok{ background:#17784c; }
+.toast.t-err{ background:#b4342f; }
+.toast.t-warn{ background:#9a6111; }
+.toast.out{ opacity:0; transform:translateY(6px); transition:all .3s; }
+@keyframes tin{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+
+.page-footer{ text-align:center; color:var(--weak); font-size:12px; padding:6px 0 30px; line-height:1.9; }
+.page-footer b{ color:var(--pri); }
+</style>
+</head>
+<body>
+
+<!-- ============================ 登录页 ============================ -->
+<div id="loginView" class="login-wrap">
+  <div class="login-card">
+    <div class="login-brand">
+      <span class="logo">
+        <svg viewBox="0 0 40 40" width="30" height="30" aria-hidden="true">
+          <path d="M9 11h8.5a4 4 0 0 1 4 4v14h-8.5a4 4 0 0 0-4 4V11z" fill="#ffffff"/>
+          <path d="M31 11h-8.5a4 4 0 0 0-4 4v14h8.5a4 4 0 0 1 4 4V11z" fill="#d6e0ff"/>
+        </svg>
+      </span>
+      <div>
+        <h1>慧自习 · 管理后台</h1>
+        <p>校园自习室预约 · 运营管理系统</p>
+      </div>
+    </div>
+
+    <div id="loginErr" class="login-err"></div>
+
+    <div class="form-row">
+      <label for="loginUser">管理员账号</label>
+      <input id="loginUser" type="text" maxlength="32" placeholder="请输入管理员账号" autocomplete="username" />
+    </div>
+    <div class="form-row">
+      <label for="loginPass">登录密码</label>
+      <input id="loginPass" type="password" maxlength="64" placeholder="请输入登录密码" autocomplete="current-password" />
+    </div>
+
+    <button id="loginBtn" class="btn btn-primary btn-block" onclick="doLogin()">登 录</button>
+
+    <div class="login-hint">
+      演示账号：<b>admin / 123456</b><br />
+      备用账号：<b>staff01 / 123456</b>
+    </div>
+  </div>
+</div>
+
+<!-- ============================ 主界面 ============================ -->
+<div id="appView" style="display:none">
+
+  <header class="topbar">
+    <span class="logo">
+      <svg viewBox="0 0 40 40" width="30" height="30" aria-hidden="true">
+        <path d="M9 11h8.5a4 4 0 0 1 4 4v14h-8.5a4 4 0 0 0-4 4V11z" fill="#ffffff"/>
+        <path d="M31 11h-8.5a4 4 0 0 0-4 4v14h8.5a4 4 0 0 1 4 4V11z" fill="#d6e0ff"/>
+      </svg>
+    </span>
+    <div>
+      <h1>慧自习 · 管理后台</h1>
+      <div class="sub">校园自习室预约 · 运营管理系统</div>
+    </div>
+    <div class="who">
+      <div class="name" id="adminName">—</div>
+      <div class="role" id="adminRole">—</div>
+    </div>
+    <button class="icon-btn" id="msgIconBtn" onclick="openMsgModal()" title="最近消息" aria-label="最近消息">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+           stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M6 9.5a6 6 0 0 1 12 0c0 3.6 1.2 5.2 1.9 5.9H4.1C4.8 14.7 6 13.1 6 9.5z" />
+        <path d="M10.2 18.6a2 2 0 0 0 3.6 0" />
+      </svg>
+      <span class="badge" id="msgBadge" style="display:none">0</span>
+    </button>
+    <button class="btn btn-ghost" id="logoutBtn" onclick="doLogout()">退出登录</button>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" id="tab-overview" onclick="switchTab('overview')">概览</button>
+    <button class="tab" id="tab-rooms" onclick="switchTab('rooms')">场地管理</button>
+    <button class="tab" id="tab-orders" onclick="switchTab('orders')">预约管理</button>
+    <button class="tab" id="tab-users" onclick="switchTab('users')">用户管理</button>
+  </nav>
+
+  <main>
+
+    <!-- ---------------- 页签 1：概览 ---------------- -->
+    <section id="panel-overview">
+      <div class="cards" id="ovCards"></div>
+
+      <div class="box">
+        <div class="box-head">
+          <h2>最近 20 条预约 <span class="cnt" id="ovOrderCnt"></span></h2>
+          <div class="box-actions">
+            <span class="cnt" style="font-size:12px;color:#8a93a6">每 10 秒自动刷新</span>
+            <button class="btn btn-ghost btn-sm" onclick="loadOverview(false)">立即刷新</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>订单号</th><th>学号</th><th>姓名</th><th>自习室</th><th>座位</th>
+                <th>预约日期</th><th>时段</th><th>时长</th><th>状态</th><th>核销</th>
+              </tr>
+            </thead>
+            <tbody id="ovOrders"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="box">
+        <div class="box-head">
+          <h2>学生登录记录 <span class="cnt" id="ovSessCnt"></span></h2>
+        </div>
+        <div class="box-hint">
+          学生每在小程序登录一次，这里就多一条记录（最多显示最近 20 条）。它只说明「有人登录过、还没退出」，不是实时在线人数。
+        </div>
+        <div class="sess-list" id="ovSessions"></div>
+      </div>
+    </section>
+
+    <!-- ---------------- 页签 2：场地管理 ---------------- -->
+    <section id="panel-rooms" style="display:none">
+      <div class="box">
+        <div class="box-head">
+          <h2>自习室列表 <span class="cnt" id="roomTotal"></span></h2>
+          <div class="box-actions">
+            <button class="btn btn-ghost btn-sm" onclick="loadRooms()">刷新</button>
+            <button class="btn btn-primary btn-sm" onclick="openRoomModal(null)">＋ 新增自习室</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>编号</th><th>名称</th><th>校区</th><th>楼栋</th><th>楼层</th>
+                <th>容量</th><th>开放时间</th><th>状态</th><th>预约数</th><th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="roomRows"></tbody>
+          </table>
+        </div>
+        <div class="modal-tip">提示：状态列可直接下拉切换；编辑为全量更新，保存后立即生效。</div>
+      </div>
+    </section>
+
+    <!-- ---------------- 页签 3：预约管理 ---------------- -->
+    <section id="panel-orders" style="display:none">
+      <div class="box">
+        <div class="box-head">
+          <h2>筛选条件</h2>
+        </div>
+        <div class="filters">
+          <div class="field">
+            <label for="ofDateFrom">起始日期</label>
+            <input id="ofDateFrom" type="date" />
+          </div>
+          <div class="field">
+            <label for="ofDateTo">结束日期</label>
+            <input id="ofDateTo" type="date" />
+          </div>
+          <div class="field">
+            <label for="ofRoomId">自习室</label>
+            <select id="ofRoomId"></select>
+          </div>
+          <div class="field">
+            <label for="ofStatus">预约状态</label>
+            <select id="ofStatus">
+              <option value="all">全部</option>
+              <option value="pending">待使用</option>
+              <option value="using">使用中</option>
+              <option value="done">已完成</option>
+              <option value="canceled">已取消</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="ofCheckin">核销状态</label>
+            <select id="ofCheckin">
+              <option value="all">全部</option>
+              <option value="none">未核销</option>
+              <option value="checked">已核销</option>
+            </select>
+          </div>
+          <div class="field" style="min-width:200px">
+            <label for="ofKeyword">关键词</label>
+            <input id="ofKeyword" type="text" maxlength="32" placeholder="订单号 / 学号 / 姓名 / 座位号" />
+          </div>
+          <div class="field" style="min-width:110px">
+            <label for="ofPageSize">每页条数</label>
+            <select id="ofPageSize">
+              <option value="10">10</option>
+              <option value="20" selected>20</option>
+              <option value="30">30</option>
+              <option value="50">50</option>
+            </select>
+          </div>
+          <div class="field" style="min-width:170px">
+            <label for="ofSort">排序</label>
+            <select id="ofSort">
+              <option value="created_desc">下单时间倒序</option>
+              <option value="reserve_asc">预约日期正序</option>
+              <option value="reserve_desc">预约日期倒序</option>
+            </select>
+          </div>
+          <div class="filter-acts">
+            <button class="btn btn-primary" onclick="searchOrders()">查询</button>
+            <button class="btn btn-ghost" onclick="resetOrderFilter()">重置</button>
+          </div>
+          <div class="filter-acts">
+            <button class="btn btn-ghost btn-sm" onclick="setTodayRange()">今天</button>
+            <button class="btn btn-ghost btn-sm" onclick="clearDateRange()">清空日期</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="box">
+        <div class="checkin-bar">
+          <strong style="font-size:13px;color:#2f5bff">输入核销码核销</strong>
+          <input id="checkinCode" type="text" maxlength="8" placeholder="8 位数字核销码" />
+          <button class="btn btn-primary" onclick="submitCheckinByCode()">核销</button>
+          <span class="hint">输入后按回车即可核销；不在核销时段会询问是否强制核销。</span>
+        </div>
+
+        <div class="box-head">
+          <h2>预约列表 <span class="cnt" id="orderTotal"></span></h2>
+          <div class="box-actions">
+            <button class="btn btn-ghost btn-sm" onclick="loadOrders()">刷新</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportOrders()">导出 Excel</button>
+            <button class="btn btn-ghost btn-sm" onclick="printOrders()">打印</button>
+          </div>
+        </div>
+
+        <div class="sum-strip" id="orderSummary"></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>核销码</th><th>订单号</th><th>学号</th><th>姓名</th><th>自习室</th><th>座位</th>
+                <th>预约日期</th><th>时段</th><th>时长</th><th>状态</th><th>核销状态</th><th>下单时间</th><th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="orderRows"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="orderPager"></div>
+      </div>
+    </section>
+
+    <!-- ---------------- 页签 4：用户管理 ---------------- -->
+    <section id="panel-users" style="display:none">
+      <div class="box">
+        <div class="box-head">
+          <h2>学生用户 <span class="cnt" id="userTotal"></span></h2>
+          <div class="box-actions">
+            <input id="ufKeyword" type="text" maxlength="32" placeholder="学号 / 昵称 / 学院" style="width:210px" />
+            <button class="btn btn-primary btn-sm" onclick="searchUsers()">搜索</button>
+            <button class="btn btn-ghost btn-sm" onclick="resetUserSearch()">重置</button>
+            <button class="btn btn-primary btn-sm" onclick="openUserModal(null)">＋ 新增用户</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>学号</th><th>昵称</th><th>学院</th><th>信用分</th><th>预约总数</th>
+                <th>进行中</th><th>已取消</th><th>未读消息</th><th>注册时间</th><th>微信</th><th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="userRows"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="userPager"></div>
+      </div>
+    </section>
+
+    <footer class="page-footer">
+      慧自习 · 校园自习室预约小程序 · 课程演示项目<br />
+      演示账号 <b>admin / 123456</b>（另备 <b>staff01 / 123456</b>）
+    </footer>
+  </main>
+</div>
+
+<!-- ============================ 自习室编辑弹窗 ============================ -->
+<div class="mask" id="roomMask">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="roomModalTitle">新增自习室</h3>
+      <button class="x" onclick="closeModal('roomMask')" title="关闭">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field">
+          <label for="roomId">自习室编号（留空自动生成）</label>
+          <input id="roomId" type="text" maxlength="16" placeholder="如 r9" />
+        </div>
+        <div class="field">
+          <label for="roomName">名称 <span class="req">*</span></label>
+          <input id="roomName" type="text" maxlength="64" placeholder="如 明德楼三层自习室" />
+        </div>
+        <div class="field">
+          <label for="roomCampus">校区 <span class="req">*</span></label>
+          <input id="roomCampus" type="text" maxlength="16" placeholder="如 东校区" />
+        </div>
+        <div class="field">
+          <label for="roomBuilding">楼栋 <span class="req">*</span></label>
+          <input id="roomBuilding" type="text" maxlength="32" placeholder="如 明德楼" />
+        </div>
+        <div class="field">
+          <label for="roomFloor">楼层 <span class="req">*</span></label>
+          <input id="roomFloor" type="text" maxlength="16" placeholder="如 3F" />
+        </div>
+        <div class="field">
+          <label for="roomCapacity">座位容量 <span class="req">*</span></label>
+          <input id="roomCapacity" type="number" min="1" max="999" placeholder="如 60" />
+        </div>
+        <div class="field">
+          <label for="roomSeatPrefix">座位前缀 <span class="req">*</span></label>
+          <input id="roomSeatPrefix" type="text" maxlength="4" placeholder="A / B / C" />
+        </div>
+        <div class="field">
+          <label for="roomStatus">开放状态</label>
+          <select id="roomStatus">
+            <option value="open">开放中</option>
+            <option value="full">已约满</option>
+            <option value="maintenance">维护中</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="roomOpenFrom">开放整点（开始）<span class="req">*</span></label>
+          <select id="roomOpenFrom"></select>
+        </div>
+        <div class="field">
+          <label for="roomOpenTo">开放整点（结束）<span class="req">*</span></label>
+          <select id="roomOpenTo"></select>
+        </div>
+        <div class="field">
+          <label for="roomTags">标签（英文逗号分隔）</label>
+          <input id="roomTags" type="text" maxlength="120" placeholder="静音区,电源插座,空调" />
+        </div>
+        <div class="field">
+          <label for="roomSortNo">排序值（越小越前）</label>
+          <input id="roomSortNo" type="number" placeholder="0" />
+        </div>
+        <div class="field full">
+          <label for="roomCover">封面图路径（详情页大图 1125×510）</label>
+          <input id="roomCover" type="text" maxlength="64" placeholder="如 /images/cover-1.jpg（可留空）" />
+        </div>
+        <div class="field full">
+          <label for="roomCoverCard">热门卡片图路径（690×360，留空则用封面图）</label>
+          <input id="roomCoverCard" type="text" maxlength="64" placeholder="如 /images/hot-zhiyuan-lib.jpg（可留空）" />
+        </div>
+        <div class="field full">
+          <label for="roomDesc">简介</label>
+          <textarea id="roomDesc" rows="2" maxlength="255" placeholder="一句话介绍该自习室"></textarea>
+        </div>
+        <div class="field full">
+          <label for="roomNotice">入馆须知</label>
+          <textarea id="roomNotice" rows="2" maxlength="255" placeholder="如 请保持安静，禁止携带食物"></textarea>
+        </div>
+      </div>
+      <div class="modal-err" id="roomErr"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('roomMask')">取消</button>
+      <button class="btn btn-primary" id="roomSaveBtn" onclick="saveRoom()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================ 用户编辑弹窗 ============================ -->
+<div class="mask" id="userMask">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <h3 id="userModalTitle">新增学生用户</h3>
+      <button class="x" onclick="closeModal('userMask')" title="关闭">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field">
+          <label for="uStudentId">学号 <span class="req">*</span></label>
+          <input id="uStudentId" type="text" maxlength="20" placeholder="如 20210102" />
+        </div>
+        <div class="field">
+          <label for="uNickname">昵称 <span class="req">*</span></label>
+          <input id="uNickname" type="text" maxlength="32" placeholder="如 张同学" />
+        </div>
+        <div class="field">
+          <label for="uPassword" id="uPasswordLabel">登录密码 <span class="req">*</span></label>
+          <input id="uPassword" type="text" maxlength="32" placeholder="至少 6 位" />
+        </div>
+        <div class="field">
+          <label for="uCollege">学院</label>
+          <input id="uCollege" type="text" maxlength="32" placeholder="如 计算机学院" />
+        </div>
+        <div class="field">
+          <label for="uCredit">信用分</label>
+          <input id="uCredit" type="number" min="0" max="1000" placeholder="默认 100" />
+        </div>
+      </div>
+      <div class="modal-err" id="userErr"></div>
+      <div class="modal-tip" id="userModalTip"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('userMask')">取消</button>
+      <button class="btn btn-primary" id="userSaveBtn" onclick="saveUser()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 弹窗：最近消息明细（由概览页「查看最近消息」按钮打开） -->
+<div class="mask" id="msgMask">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-head">
+      <h3>最近消息 <span class="cnt" id="msgModalCnt"></span></h3>
+      <button class="x" onclick="closeModal('msgMask')" title="关闭">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="msg-scroll" id="ovMessages"></div>
+      <div class="modal-tip" id="msgModalTip">数据来自 GET /api/admin/overview 的 messages（最近 12 条），红边为未读；概览每 10 秒自动刷新，也可点「刷新」立即更新。</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('msgMask')">关闭</button>
+      <button class="btn btn-primary" onclick="loadOverview(false)">刷新</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast 容器 -->
+<div class="toasts" id="toasts"></div>
+
+<script>
+/* ============================================================================
+ * 1. 全局状态与常量
+ * ========================================================================== */
+
+var TOKEN_KEY = "hzx_admin_token";   // localStorage 中保存的令牌键名（与需求一致）
+
+// 状态文案字典
+var ROOM_STATUS_TEXT = { open: "开放中", full: "已约满", maintenance: "维护中" };
+var ORDER_STATUS_TEXT = { pending: "待使用", using: "使用中", done: "已完成", canceled: "已取消" };
+
+// 全局运行时状态
+var App = {
+  token: "",              // 当前令牌
+  admin: null,            // 当前管理员 { id, username, name, role }
+  tab: "overview",        // 当前页签
+  timer: null,            // 概览自动刷新定时器
+  rooms: [],              // 自习室缓存（筛选下拉、快捷改状态使用）
+  users: [],              // 当前页学生列表缓存（编辑弹窗回填使用）
+  expiredNotified: false  // 401 提示只弹一次，避免并发请求刷屏
+};
+
+// 预约列表筛选 / 分页状态
+var ofilter = {
+  dateFrom: "", dateTo: "", roomId: "", status: "all", checkin: "all",
+  keyword: "", pageSize: 20, sort: "created_desc", page: 1
+};
+var ometa = { total: 0, page: 1, pageSize: 20 };
+
+// 用户列表筛选 / 分页状态
+var ufilter = { keyword: "", pageSize: 20, page: 1 };
+var umeta = { total: 0, page: 1, pageSize: 20 };
+
+
+/* ============================================================================
+ * 2. 通用工具函数
+ * ========================================================================== */
+
+/** HTML 转义，防止表格内容破坏页面结构 */
+function esc(s) {
+  return String(s === null || s === undefined ? "" : s).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+  });
+}
+
+/** 两位补零 */
+function p2(n) { return (n < 10 ? "0" : "") + n; }
+
+/** 数字兜底：空值返回 0 */
+function n0(v) { var n = Number(v); return isNaN(n) ? 0 : n; }
+
+/** 时长展示：1.5h */
+function fmtHours(v) {
+  var n = Number(v);
+  if (isNaN(n)) return "0h";
+  return (Math.round(n * 10) / 10) + "h";
+}
+
+/** 汇总里的总时长（hours）：保留 1 位小数 */
+function fmtHoursTotal(v) {
+  var n = Number(v);
+  if (isNaN(n)) return "0.0";
+  return (Math.round(n * 10) / 10).toFixed(1);
+}
+
+/** 时间格式化：支持毫秒时间戳、秒级时间戳、MySQL 日期字符串 */
+function fmtTime(v) {
+  if (v === null || v === undefined || v === "") return "-";
+  var d;
+  if (typeof v === "number") {
+    d = new Date(v < 1e11 ? v * 1000 : v);        // 小于 1e11 视为秒级时间戳
+  } else if (/^\d+$/.test(String(v))) {
+    var num = Number(v);
+    d = new Date(num < 1e11 ? num * 1000 : num);
+  } else {
+    // 兼容 "2025-12-01 09:00:00.000"（部分老内核无法直接解析）
+    d = new Date(String(v).replace(/-/g, "/").replace(/\.\d+$/, ""));
+  }
+  if (!d || isNaN(d.getTime())) return String(v);
+  return d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()) + " " +
+    p2(d.getHours()) + ":" + p2(d.getMinutes());
+}
+
+/** 今天（YYYY-MM-DD），用于日期筛选快捷按钮 */
+function todayStr() {
+  var d = new Date();
+  return d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate());
+}
+
+/** 紧凑日期 YYYYMMDD，用于导出文件名 */
+function todayCompact() { return todayStr().replace(/-/g, ""); }
+
+/** 表格占位行 */
+function loadingRow(cols) { return "<tr class='ph'><td colspan='" + cols + "'>加载中…</td></tr>"; }
+function emptyRow(cols, text) { return "<tr class='ph'><td colspan='" + cols + "'>" + esc(text || "暂无数据") + "</td></tr>"; }
+
+/** 预约状态胶囊 */
+function orderPill(status) {
+  var t = ORDER_STATUS_TEXT[status] || status || "-";
+  return "<span class='pill p-" + esc(status) + "'>" + esc(t) + "</span>";
+}
+function checkinPill(checked) {
+  return checked
+    ? "<span class='pill p-open'>已核销</span>"
+    : "<span class='pill p-none'>未核销</span>";
+}
+
+/** 角色文案 */
+function roleText(role) {
+  if (role === "super") return "超级管理员";
+  if (role === "staff") return "场馆管理员";
+  return role || "管理员";
+}
+
+/** Toast 轻提示：type = ok | err | warn */
+function toast(msg, type) {
+  var box = document.getElementById("toasts");
+  if (!box) return;
+  var el = document.createElement("div");
+  el.className = "toast" + (type ? " t-" + type : "");
+  el.textContent = String(msg);
+  box.appendChild(el);
+  setTimeout(function () {
+    el.className += " out";
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 320);
+  }, 2800);
+}
+function toastOk(m) { toast(m, "ok"); }
+function toastErr(m) { toast(m, "err"); }
+
+/** 构造业务错误对象 */
+function beErr(code, message) {
+  var e = new Error(message || "请求失败");
+  e.code = code;
+  return e;
+}
+/** 错误文案 */
+function errText(e) {
+  if (!e) return "未知错误";
+  if (e.message) return e.message;
+  return "网络异常，请确认后端服务已启动";
+}
+
+/** 对象 → 查询字符串（自动跳过空值） */
+function qs(params) {
+  var parts = [];
+  if (params) {
+    for (var k in params) {
+      if (!Object.prototype.hasOwnProperty.call(params, k)) continue;
+      var v = params[k];
+      if (v === undefined || v === null || v === "") continue;
+      parts.push(encodeURIComponent(k) + "=" + encodeURIComponent(v));
+    }
+  }
+  return parts.length ? "?" + parts.join("&") : "";
+}
+
+/** 请求头：带 token */
+function authHeaders(extra) {
+  var h = extra || {};
+  var token = App.token || getToken();
+  if (token) h["Authorization"] = "Bearer " + token;
+  return h;
+}
+
+
+/* ============================================================================
+ * 3. 接口统一封装（自动带 token、统一拆 {code,message,data}、统一中文报错）
+ * ========================================================================== */
+
+/** 读取本地令牌 */
+function getToken() {
+  try { return localStorage.getItem(TOKEN_KEY) || ""; } catch (e) { return ""; }
+}
+/** 写入 / 清除本地令牌 */
+function setToken(t) {
+  App.token = t || "";
+  try {
+    if (t) localStorage.setItem(TOKEN_KEY, t);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch (e) { /* 隐私模式下 localStorage 不可用，忽略 */ }
+}
+
+/** 401 统一处理：清 token、回登录页、提示 */
+function handleUnauthorized(msg) {
+  setToken("");
+  App.admin = null;
+  stopOverviewTimer();
+  showLogin();
+  var text = msg || "登录已失效，请重新登录";
+  document.getElementById("loginErr").textContent = text;
+  document.getElementById("loginErr").style.display = "block";
+  if (!App.expiredNotified) {
+    App.expiredNotified = true;
+    toastErr("登录已失效，请重新登录");
+  }
+}
+
+/**
+ * 核心请求方法
+ * @param {string} method GET/POST/PUT/DELETE
+ * @param {string} path   接口路径，如 /api/admin/orders
+ * @param {object} opts   { query: {}, body: {} }
+ * @return Promise<data>  已拆包的 data；失败时 reject(Error{code,message})
+ */
+function request(method, path, opts) {
+  opts = opts || {};
+  var url = path + qs(opts.query);
+  var init = { method: method, headers: authHeaders() };
+  if (opts.body !== undefined && opts.body !== null) {
+    init.headers["Content-Type"] = "application/json; charset=utf-8";
+    init.body = JSON.stringify(opts.body);
+  }
+
+  return fetch(url, init).then(function (res) {
+    return res.text().then(function (text) {
+      var json = null;
+      try { json = JSON.parse(text); } catch (e) { json = null; }
+
+      if (!json) {
+        throw beErr(res.status, "服务器返回异常（HTTP " + res.status + "），请确认后端已启动");
+      }
+      if (json.code === 401) {                    // 登录失效
+        handleUnauthorized(json.message);
+        throw beErr(401, json.message || "登录已失效，请重新登录");
+      }
+      if (json.code !== 0) {                      // 业务失败：把后端中文原因抛给调用方
+        throw beErr(json.code, json.message || "操作失败");
+      }
+      return json.data;
+    });
+  }).catch(function (e) {
+    if (e && e.code !== undefined) throw e;       // 已是业务错误
+    throw beErr(-1, "网络请求失败，请确认后端服务（node server/server.js）已启动");
+  });
+}
+
+function apiGet(path, query) { return request("GET", path, { query: query }); }
+function apiSend(method, path, body) { return request(method, path, { body: body || {} }); }
+
+
+/* ============================================================================
+ * 4. 登录 / 登出 / 管理员信息
+ * ========================================================================== */
+
+/** 登录页与主界面切换 */
+function showLogin() {
+  document.getElementById("loginView").style.display = "flex";
+  document.getElementById("appView").style.display = "none";
+}
+function showApp() {
+  document.getElementById("loginView").style.display = "none";
+  document.getElementById("appView").style.display = "block";
+}
+
+/** 顶栏展示当前管理员 */
+function renderAdmin() {
+  var a = App.admin || {};
+  document.getElementById("adminName").textContent = a.name || a.username || "管理员";
+  document.getElementById("adminRole").textContent = roleText(a.role) + (a.username ? "（" + a.username + "）" : "");
+}
+
+/** 登录（此处直接用 fetch，便于展示后端的原始中文错误，不触发 401 拦截逻辑） */
+function doLogin() {
+  var user = document.getElementById("loginUser").value.replace(/^\s+|\s+$/g, "");
+  var pass = document.getElementById("loginPass").value;
+  var errBox = document.getElementById("loginErr");
+  var btn = document.getElementById("loginBtn");
+
+  errBox.style.display = "none";
+  errBox.textContent = "";
+
+  if (!user) { errBox.textContent = "请输入管理员账号"; errBox.style.display = "block"; return; }
+  if (!pass) { errBox.textContent = "请输入登录密码"; errBox.style.display = "block"; return; }
+
+  btn.disabled = true;
+  btn.textContent = "登录中…";
+
+  fetch("/api/admin/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    body: JSON.stringify({ username: user, password: pass })
+  }).then(function (res) {
+    return res.text().then(function (text) {
+      var json = null;
+      try { json = JSON.parse(text); } catch (e) { json = null; }
+      if (!json) throw beErr(-1, "服务器返回异常（HTTP " + res.status + "）");
+      if (json.code !== 0) throw beErr(json.code, json.message || "登录失败");
+      return json.data || {};
+    });
+  }).then(function (data) {
+    setToken(data.token || "");
+    App.admin = data.admin || null;
+    App.expiredNotified = false;
+    errBox.style.display = "none";
+    renderAdmin();
+    showApp();
+    document.getElementById("loginPass").value = "";
+    switchTab("overview", true);   // 登录后进入概览并开始加载
+    toastOk("登录成功，欢迎回来");
+  }).catch(function (e) {
+    errBox.textContent = errText(e);
+    errBox.style.display = "block";
+  }).then(function () {
+    btn.disabled = false;
+    btn.textContent = "登 录";
+  });
+}
+
+/** 退出登录 */
+function doLogout() {
+  if (!confirm("确定退出登录吗？")) return;
+  var btn = document.getElementById("logoutBtn");
+  btn.disabled = true;
+  apiSend("POST", "/api/admin/logout").catch(function () {
+    /* 退出失败也照样清理本地状态 */
+  }).then(function () {
+    btn.disabled = false;
+    setToken("");
+    App.admin = null;
+    stopOverviewTimer();
+    document.getElementById("loginUser").value = "";
+    document.getElementById("loginPass").value = "";
+    document.getElementById("loginErr").style.display = "none";
+    showLogin();
+    toast("已退出登录");
+  });
+}
+
+
+/* ============================================================================
+ * 5. 页签切换
+ * ========================================================================== */
+
+function switchTab(name, skipLog) {
+  App.tab = name;
+  var tabs = ["overview", "rooms", "orders", "users"];
+  for (var i = 0; i < tabs.length; i++) {
+    var t = tabs[i];
+    var btn = document.getElementById("tab-" + t);
+    var panel = document.getElementById("panel-" + t);
+    if (btn) btn.className = (t === name) ? "tab active" : "tab";
+    if (panel) panel.style.display = (t === name) ? "block" : "none";
+  }
+
+  if (name === "overview") {
+    loadOverview(false);
+    startOverviewTimer();       // 仅概览页开启 10 秒自动刷新
+  } else {
+    stopOverviewTimer();        // 其他页签停止自动刷新，避免打断操作
+  }
+  if (name === "rooms") loadRooms();
+  if (name === "orders") {
+    loadRoomOptions();          // 保证筛选下拉有数据
+    loadOrders();
+  }
+  if (name === "users") loadUsers();
+  if (!skipLog) window.scrollTo(0, 0);
+}
+
+
+/* ============================================================================
+ * 6. 概览页
+ * ========================================================================== */
+
+/** 启动 / 停止概览自动刷新（10 秒） */
+function startOverviewTimer() {
+  stopOverviewTimer();
+  App.timer = setInterval(function () {
+    if (App.tab === "overview" && !document.hidden && App.admin) loadOverview(true);
+  }, 10000);
+}
+function stopOverviewTimer() {
+  if (App.timer) { clearInterval(App.timer); App.timer = null; }
+}
+
+/** 统计卡片 */
+function statCard(num, label, tone) {
+  return "<div class='card" + (tone ? " c-" + tone : "") + "'>" +
+    "<div class='num'>" + esc(num) + "</div>" +
+    "<div class='lab'>" + esc(label) + "</div></div>";
+}
+
+/**
+ * 加载概览数据
+ * @param {boolean} silent 自动刷新时静默加载（不改动 loading 占位，不弹错误 toast）
+ */
+function loadOverview(silent) {
+  var cardsEl = document.getElementById("ovCards");
+  var ordersEl = document.getElementById("ovOrders");
+  if (!silent) {
+    ordersEl.innerHTML = loadingRow(10);
+    if (!cardsEl.innerHTML) cardsEl.innerHTML = "<div class='card'><div class='num'>…</div><div class='lab'>加载中…</div></div>";
+  }
+
+  apiGet("/api/admin/overview").then(function (data) {
+    data = data || {};
+    var s = data.stats || {};
+
+    /* --- 统计卡片 --- */
+    cardsEl.innerHTML = [
+      statCard(n0(s.roomTotal), "自习室总数"),
+      statCard(n0(s.roomOpen), "开放中", "ok"),
+      statCard(n0(s.roomFull), "已约满", "warn"),
+      statCard(n0(s.roomMaintenance), "维护中", "weak"),
+      statCard(n0(s.orderTotal), "订单总数"),
+      statCard(n0(s.todayOrders), "今日预约"),
+      statCard(n0(s.pendingOrders), "待使用", "warn"),
+      statCard(n0(s.usingOrders), "使用中", "ok"),
+      statCard(n0(s.checkedInToday), "已核销（今日）", "ok"),
+      statCard(n0(s.userTotal), "学生总数"),
+      statCard(n0(s.adminTotal), "管理员数", "weak"),
+      statCard(n0(s.freeSeats), "空闲座位"),
+      statCard(n0(s.unreadMessages), "未读消息", n0(s.unreadMessages) > 0 ? "bad" : "weak")
+    ].join("");
+
+    /* --- 最近 20 条预约 --- */
+    var orders = data.orders || [];
+    document.getElementById("ovOrderCnt").textContent = "共 " + orders.length + " 条";
+    ordersEl.innerHTML = orders.length ? orders.map(function (o) {
+      return "<tr>" +
+        "<td class='mono'>" + esc(o.id) + "</td>" +
+        "<td><span class='pill p-user'>" + esc(o.userId) + "</span></td>" +
+        "<td>" + esc(o.nickname || "-") + "</td>" +
+        "<td>" + esc(o.roomName || o.roomId || "-") + "</td>" +
+        "<td>" + esc(o.seatNo || "-") + "</td>" +
+        "<td>" + esc(o.date || "-") + "</td>" +
+        "<td>" + esc((o.startSlot || "") + "-" + (o.endSlot || "")) + "</td>" +
+        "<td>" + esc(fmtHours(o.hours)) + "</td>" +
+        "<td>" + orderPill(o.status) + "</td>" +
+        "<td>" + checkinPill(!!o.checkedIn) + "</td>" +
+        "</tr>";
+    }).join("") : emptyRow(10, "暂无数据");
+
+    /* --- 最近 12 条消息：入口在顶栏消息图标（带未读角标），明细渲染进弹窗 --- */
+    var msgs = data.messages || [];
+    var unreadShown = 0;
+    msgs.forEach(function (mm) { if (!mm.read) unreadShown++; });
+    /* 角标用接口给的“全库未读总数”（概览只返回最近 12 条，按 12 条统计会漏），拿不到时退回本地统计 */
+    var stats = data.stats || {};
+    var unread = stats.unreadMessages !== undefined ? n0(stats.unreadMessages) : unreadShown;
+
+    var badge = document.getElementById("msgBadge");
+    badge.textContent = unread > 99 ? "99+" : String(unread);
+    badge.style.display = unread > 0 ? "block" : "none";
+    document.getElementById("msgIconBtn").title =
+      "最近消息 " + msgs.length + " 条" + (unread > 0 ? "（未读 " + unread + " 条）" : "（全部已读）");
+    document.getElementById("msgModalCnt").textContent = msgs.length ? "最近 " + msgs.length + " 条" : "";
+    document.getElementById("msgModalTip").innerHTML = msgs.length
+      ? ("最近 " + msgs.length + " 条中有 " +
+        (unreadShown > 0 ? "<span class='unread-tag'>" + unreadShown + " 条未读</span>" : "0 条未读") +
+        (unread > unreadShown ? "（系统未读合计 " + unread + " 条）" : "") +
+        "；数据来自 GET /api/admin/overview（最近 12 条），红边为未读。")
+      : "暂无消息推送。";
+
+    document.getElementById("ovMessages").innerHTML = msgs.length ? msgs.map(function (m) {
+      return "<div class='msg " + (m.read ? "" : "unread") + "'>" +
+        "<b>" + esc(m.title || "(无标题)") + "</b> " +
+        "<time>" + esc(fmtTime(m.ts)) + " · " + esc(m.userId || "-") + (m.read ? "" : " · 未读") + "</time>" +
+        "<p>" + esc(m.content || "") + "</p></div>";
+    }).join("") : "<div style='color:#8a93a6;font-size:13px'>暂无数据</div>";
+
+    /* --- 学生登录会话：显示「昵称 · 学号 · 登录时间」，鼠标悬停看 token 前 6 位 --- */
+    var sess = data.sessions || [];
+    document.getElementById("ovSessCnt").textContent = sess.length + " 条登录记录";
+    document.getElementById("ovSessions").innerHTML = sess.length
+      ? sess.map(function (x) {
+          var label, tip;
+          if (typeof x === "string") {   // 兼容旧格式 "20210101 (tk abc123…)"
+            label = x; tip = x;
+          } else {
+            label = (x.nickname ? x.nickname + " · " : "") + (x.userId || "-") +
+              (x.ts ? " · " + fmtTime(x.ts) + " 登录" : "");
+            tip = "登录令牌 token " + (x.token || "") + "…（用于校验小程序请求身份）";
+          }
+          return "<span class='pill p-user' style='margin:2px' title='" + esc(tip) + "'>" + esc(label) + "</span>";
+        }).join("")
+      : "<span style='color:#8a93a6;font-size:13px'>暂无登录会话（学生在小程序登录后出现）</span>";
+  }).catch(function (e) {
+    if (!silent) {
+      ordersEl.innerHTML = emptyRow(10, "加载失败：" + errText(e));
+      toastErr("概览加载失败：" + errText(e));
+    }
+  });
+}
+
+
+/* ============================================================================
+ * 7. 场地管理（自习室增删改查）
+ * ========================================================================== */
+
+/** 用编号找缓存中的自习室 */
+function findRoom(id) {
+  for (var i = 0; i < App.rooms.length; i++) {
+    if (String(App.rooms[i].id) === String(id)) return App.rooms[i];
+  }
+  return null;
+}
+
+/** 自习室对象 → 提交给后端的全量字段 */
+function roomToPayload(r) {
+  r = r || {};
+  return {
+    id: r.id,
+    name: r.name,
+    campus: r.campus,
+    building: r.building,
+    floor: r.floor,
+    capacity: n0(r.capacity),
+    seatPrefix: r.seatPrefix,
+    openFrom: n0(r.openFrom),
+    openTo: n0(r.openTo),
+    status: r.status || "open",
+    tags: r.tags || [],
+    cover: r.cover || "",
+    coverCard: r.coverCard || "",
+    desc: r.desc || "",
+    notice: r.notice || "",
+    sortNo: n0(r.sortNo)
+  };
+}
+
+/** 加载自习室列表 */
+function loadRooms() {
+  var tb = document.getElementById("roomRows");
+  tb.innerHTML = loadingRow(10);
+  apiGet("/api/admin/rooms").then(function (data) {
+    data = data || {};
+    App.rooms = data.list || [];
+    document.getElementById("roomTotal").textContent = "共 " + n0(data.total || App.rooms.length) + " 间";
+    renderRooms();
+    fillRoomOptions();
+  }).catch(function (e) {
+    tb.innerHTML = emptyRow(10, "加载失败：" + errText(e));
+    toastErr("自习室加载失败：" + errText(e));
+  });
+}
+
+/** 渲染自习室表格（状态列可下拉快捷切换） */
+function renderRooms() {
+  var tb = document.getElementById("roomRows");
+  if (!App.rooms.length) { tb.innerHTML = emptyRow(10, "暂无数据"); return; }
+
+  var opts = function (cur) {
+    var keys = ["open", "full", "maintenance"];
+    return keys.map(function (k) {
+      return "<option value='" + k + "'" + (k === cur ? " selected" : "") + ">" + ROOM_STATUS_TEXT[k] + "</option>";
+    }).join("");
+  };
+
+  tb.innerHTML = App.rooms.map(function (r) {
+    var openText = r.openText || (p2(n0(r.openFrom)) + ":00-" + p2(n0(r.openTo)) + ":00");
+    return "<tr>" +
+      "<td class='mono'>" + esc(r.id) + "</td>" +
+      "<td>" + esc(r.name) + "</td>" +
+      "<td>" + esc(r.campus) + "</td>" +
+      "<td>" + esc(r.building) + "</td>" +
+      "<td>" + esc(r.floor) + "</td>" +
+      "<td>" + esc(n0(r.capacity)) + "</td>" +
+      "<td>" + esc(openText) + "</td>" +
+      "<td><select class='pill p-" + esc(r.status) + "' onchange=\"onRoomStatusChange('" + esc(r.id) + "', this.value, this)\">" +
+        opts(r.status) + "</select></td>" +
+      "<td>" + esc(n0(r.orderCount)) + (n0(r.activeOrderCount) > 0 ? "（进行中 " + esc(n0(r.activeOrderCount)) + "）" : "") + "</td>" +
+      "<td><div class='row-acts'>" +
+        "<button class='btn btn-sm btn-ghost' onclick=\"openRoomModal('" + esc(r.id) + "')\">编辑</button>" +
+        "<button class='btn btn-sm btn-danger' onclick=\"deleteRoom('" + esc(r.id) + "')\">删除</button>" +
+      "</div></td>" +
+      "</tr>";
+  }).join("");
+}
+
+/** 状态快捷切换（PUT 为全量更新，所以先取缓存里的完整对象再覆盖 status） */
+function onRoomStatusChange(id, status, el) {
+  var room = findRoom(id);
+  if (!room) { toastErr("自习室数据已过期，请刷新后重试"); return; }
+  var payload = roomToPayload(room);
+  payload.status = status;
+  el.disabled = true;
+  if (el.className !== undefined) el.className = "pill p-" + status;   // 即时反馈颜色
+
+  apiSend("PUT", "/api/admin/rooms/" + encodeURIComponent(id), payload).then(function (data) {
+    var name = (data && data.room && data.room.name) || room.name;
+    toastOk("《" + name + "》已切换为「" + (ROOM_STATUS_TEXT[status] || status) + "」");
+    loadRooms();
+  }).catch(function (e) {
+    toastErr("状态修改失败：" + errText(e));
+    el.value = room.status;                                  // 回滚显示
+    if (el.className !== undefined) el.className = "pill p-" + room.status;
+    el.disabled = false;
+  });
+}
+
+/** 打开新增 / 编辑弹窗 */
+function openRoomModal(id) {
+  var r = id ? findRoom(id) : null;
+  document.getElementById("roomModalTitle").textContent = r ? "编辑自习室 · " + r.name : "新增自习室";
+  document.getElementById("roomId").value = r ? (r.id || "") : "";
+  document.getElementById("roomId").disabled = !!r;    // 编号是主键，编辑时不允许改
+  document.getElementById("roomName").value = r ? (r.name || "") : "";
+  document.getElementById("roomCampus").value = r ? (r.campus || "") : "";
+  document.getElementById("roomBuilding").value = r ? (r.building || "") : "";
+  document.getElementById("roomFloor").value = r ? (r.floor || "") : "";
+  document.getElementById("roomCapacity").value = r ? String(n0(r.capacity)) : "";
+  document.getElementById("roomSeatPrefix").value = r ? (r.seatPrefix || "") : "";
+  document.getElementById("roomStatus").value = r ? (r.status || "open") : "open";
+  fillHourSelect("roomOpenFrom", r ? n0(r.openFrom) : 8, 23);
+  fillHourSelect("roomOpenTo", r ? n0(r.openTo) : 22, 24);
+  document.getElementById("roomTags").value = r && r.tags && r.tags.length ? r.tags.join(",") : "";
+  document.getElementById("roomCover").value = r ? (r.cover || "") : "";
+  document.getElementById("roomCoverCard").value = r ? (r.coverCard || "") : "";
+  document.getElementById("roomDesc").value = r ? (r.desc || "") : "";
+  document.getElementById("roomNotice").value = r ? (r.notice || "") : "";
+  document.getElementById("roomSortNo").value = r ? String(n0(r.sortNo)) : "0";
+
+  showModalErr("roomErr", "");
+  showModal("roomMask");
+}
+
+/** 填充整点下拉框（openFrom 用 0-23，openTo 允许 24 点闭馆） */
+function fillHourSelect(elId, selected, maxHour) {
+  var el = document.getElementById(elId);
+  var max = maxHour || 23;
+  var html = "";
+  for (var h = 0; h <= max; h++) {
+    html += "<option value='" + h + "'" + (h === n0(selected) ? " selected" : "") + ">" + p2(h) + ":00</option>";
+  }
+  el.innerHTML = html;
+}
+
+/** 读取表单 → 校验 → 提交 */
+function saveRoom() {
+  var id = document.getElementById("roomId").value.replace(/^\s+|\s+$/g, "");
+  var name = document.getElementById("roomName").value.replace(/^\s+|\s+$/g, "");
+  var campus = document.getElementById("roomCampus").value.replace(/^\s+|\s+$/g, "");
+  var building = document.getElementById("roomBuilding").value.replace(/^\s+|\s+$/g, "");
+  var floor = document.getElementById("roomFloor").value.replace(/^\s+|\s+$/g, "");
+  var capacity = document.getElementById("roomCapacity").value.replace(/^\s+|\s+$/g, "");
+  var seatPrefix = document.getElementById("roomSeatPrefix").value.replace(/^\s+|\s+$/g, "").toUpperCase();
+  var status = document.getElementById("roomStatus").value;
+  var openFrom = Number(document.getElementById("roomOpenFrom").value);
+  var openTo = Number(document.getElementById("roomOpenTo").value);
+  var tagsRaw = document.getElementById("roomTags").value;
+  var cover = document.getElementById("roomCover").value.replace(/^\s+|\s+$/g, "");
+  var coverCard = document.getElementById("roomCoverCard").value.replace(/^\s+|\s+$/g, "");
+  var desc = document.getElementById("roomDesc").value.replace(/^\s+|\s+$/g, "");
+  var notice = document.getElementById("roomNotice").value.replace(/^\s+|\s+$/g, "");
+  var sortNoRaw = document.getElementById("roomSortNo").value.replace(/^\s+|\s+$/g, "");
+  var isEdit = document.getElementById("roomId").disabled;
+
+  /* --- 前端校验 --- */
+  if (id && !/^[0-9A-Za-z_]{1,16}$/.test(id)) return showModalErr("roomErr", "自习室编号只能是 1-16 位字母、数字或下划线");
+  if (!name) return showModalErr("roomErr", "请填写自习室名称");
+  if (name.length > 64) return showModalErr("roomErr", "名称不能超过 64 个字符");
+  if (!campus) return showModalErr("roomErr", "请填写校区");
+  if (!building) return showModalErr("roomErr", "请填写楼栋");
+  if (!floor) return showModalErr("roomErr", "请填写楼层");
+  if (!/^\d+$/.test(capacity) || Number(capacity) < 1 || Number(capacity) > 999) {
+    return showModalErr("roomErr", "座位容量需为 1-999 之间的整数");
+  }
+  if (!seatPrefix) return showModalErr("roomErr", "请填写座位前缀，如 A");
+  if (!/^[A-Z0-9]{1,4}$/.test(seatPrefix)) return showModalErr("roomErr", "座位前缀只能是 1-4 位大写字母或数字");
+  if (isNaN(openFrom) || isNaN(openTo)) return showModalErr("roomErr", "请选择开放时间整点");
+  if (openFrom < 0 || openFrom > 23 || openTo < 1 || openTo > 24) return showModalErr("roomErr", "开放时间需在 0-24 点之间");
+  if (openFrom >= openTo) return showModalErr("roomErr", "开放结束整点必须大于开始整点");
+  if (sortNoRaw && !/^-?\d+$/.test(sortNoRaw)) return showModalErr("roomErr", "排序值需为整数");
+  if (cover.length > 64) return showModalErr("roomErr", "封面图路径不能超过 64 个字符");
+  if (coverCard.length > 64) return showModalErr("roomErr", "热门卡片图路径不能超过 64 个字符");
+  if (desc.length > 255) return showModalErr("roomErr", "简介不能超过 255 个字符");
+  if (notice.length > 255) return showModalErr("roomErr", "入馆须知不能超过 255 个字符");
+  if (["open", "full", "maintenance"].indexOf(status) < 0) return showModalErr("roomErr", "请选择合法的开放状态");
+
+  /* 标签：支持中英文逗号分隔 */
+  var tags = tagsRaw.split(/[,，]/).map(function (t) { return t.replace(/^\s+|\s+$/g, ""); })
+    .filter(function (t) { return t !== ""; });
+  if (tags.length > 12) return showModalErr("roomErr", "标签最多 12 个");
+
+  var payload = {
+    name: name, campus: campus, building: building, floor: floor,
+    capacity: Number(capacity), seatPrefix: seatPrefix, openFrom: openFrom, openTo: openTo,
+    status: status, tags: tags, cover: cover, coverCard: coverCard, desc: desc, notice: notice,
+    sortNo: sortNoRaw === "" ? 0 : Number(sortNoRaw)
+  };
+  if (id) payload.id = id;
+
+  var btn = document.getElementById("roomSaveBtn");
+  btn.disabled = true;
+  btn.textContent = "保存中…";
+  showModalErr("roomErr", "");
+
+  var p = isEdit
+    ? apiSend("PUT", "/api/admin/rooms/" + encodeURIComponent(id), payload)
+    : apiSend("POST", "/api/admin/rooms", payload);
+
+  p.then(function (data) {
+    var room = data && data.room ? data.room : null;
+    closeModal("roomMask");
+    toastOk((isEdit ? "已保存《" : "已新增《") + ((room && room.name) || name) + "》");
+    loadRooms();
+  }).catch(function (e) {
+    showModalErr("roomErr", (isEdit ? "保存失败：" : "新增失败：") + errText(e));
+  }).then(function () {
+    btn.disabled = false;
+    btn.textContent = "保存";
+  });
+}
+
+/** 删除自习室（后端拒绝时展示中文原因） */
+function deleteRoom(id) {
+  var room = findRoom(id);
+  var name = room ? room.name : id;
+  if (!confirm("确定删除自习室《" + name + "》吗？删除后不可恢复。")) return;
+
+  apiSend("DELETE", "/api/admin/rooms/" + encodeURIComponent(id)).then(function () {
+    toastOk("已删除《" + name + "》");
+    loadRooms();
+  }).catch(function (e) {
+    alert("删除失败：" + errText(e));
+  });
+}
+
+
+/* ============================================================================
+ * 8. 预约管理
+ * ========================================================================== */
+
+/** 填充「自习室」筛选下拉（保留当前选择） */
+function loadRoomOptions() {
+  apiGet("/api/admin/rooms").then(function (data) {
+    App.rooms = (data && data.list) || [];
+    fillRoomOptions();
+  }).catch(function () { /* 下拉加载失败不打断主流程 */ });
+}
+
+function fillRoomOptions() {
+  var sel = document.getElementById("ofRoomId");
+  if (!sel) return;
+  var cur = sel.value || ofilter.roomId || "";
+  var html = "<option value=''>全部自习室</option>";
+  html += App.rooms.map(function (r) {
+    return "<option value='" + esc(r.id) + "'>" + esc(r.id + " " + r.name) + "</option>";
+  }).join("");
+  sel.innerHTML = html;
+  sel.value = cur;
+  if (!sel.value) sel.value = "";
+}
+
+/** 读取并校验筛选表单 */
+function readOrderFilter() {
+  ofilter.dateFrom = document.getElementById("ofDateFrom").value;
+  ofilter.dateTo = document.getElementById("ofDateTo").value;
+  ofilter.roomId = document.getElementById("ofRoomId").value;
+  ofilter.status = document.getElementById("ofStatus").value;
+  ofilter.checkin = document.getElementById("ofCheckin").value;
+  ofilter.keyword = document.getElementById("ofKeyword").value.replace(/^\s+|\s+$/g, "");
+  ofilter.pageSize = Number(document.getElementById("ofPageSize").value) || 20;
+  ofilter.sort = document.getElementById("ofSort").value;
+  return validateOrderFilter();
+}
+
+/** 日期格式与合法性校验 */
+function validateOrderFilter() {
+  var re = /^\d{4}-\d{2}-\d{2}$/;
+  if (ofilter.dateFrom && !re.test(ofilter.dateFrom)) { toastErr("起始日期格式应为 YYYY-MM-DD"); return false; }
+  if (ofilter.dateTo && !re.test(ofilter.dateTo)) { toastErr("结束日期格式应为 YYYY-MM-DD"); return false; }
+  if (ofilter.dateFrom && isNaN(new Date(ofilter.dateFrom.replace(/-/g, "/")).getTime())) { toastErr("起始日期不是有效日期"); return false; }
+  if (ofilter.dateTo && isNaN(new Date(ofilter.dateTo.replace(/-/g, "/")).getTime())) { toastErr("结束日期不是有效日期"); return false; }
+  if (ofilter.dateFrom && ofilter.dateTo && ofilter.dateFrom > ofilter.dateTo) {
+    toastErr("起始日期不能晚于结束日期");
+    return false;
+  }
+  return true;
+}
+
+/** 组装列表 / 导出 / 打印共用的查询参数 */
+function buildOrderQuery(withPage) {
+  var q = {
+    dateFrom: ofilter.dateFrom, dateTo: ofilter.dateTo, roomId: ofilter.roomId,
+    status: ofilter.status, checkin: ofilter.checkin, keyword: ofilter.keyword, sort: ofilter.sort
+  };
+  // 只查一天时同时带上 date 参数（后端支持单日筛选）
+  if (ofilter.dateFrom && ofilter.dateFrom === ofilter.dateTo) q.date = ofilter.dateFrom;
+  if (withPage) { q.page = ofilter.page; q.pageSize = ofilter.pageSize; }
+  return q;
+}
+
+/** 查询按钮 */
+function searchOrders() {
+  if (!readOrderFilter()) return;
+  ofilter.page = 1;
+  loadOrders();
+}
+
+/** 重置筛选 */
+function resetOrderFilter() {
+  document.getElementById("ofDateFrom").value = "";
+  document.getElementById("ofDateTo").value = "";
+  document.getElementById("ofRoomId").value = "";
+  document.getElementById("ofStatus").value = "all";
+  document.getElementById("ofCheckin").value = "all";
+  document.getElementById("ofKeyword").value = "";
+  document.getElementById("ofPageSize").value = "20";
+  document.getElementById("ofSort").value = "created_desc";
+  ofilter.page = 1;
+  loadOrders();
+}
+
+/** 快捷：今天 */
+function setTodayRange() {
+  var t = todayStr();
+  document.getElementById("ofDateFrom").value = t;
+  document.getElementById("ofDateTo").value = t;
+}
+/** 快捷：清空日期 */
+function clearDateRange() {
+  document.getElementById("ofDateFrom").value = "";
+  document.getElementById("ofDateTo").value = "";
+}
+
+/** 加载预约列表 */
+function loadOrders() {
+  if (!validateOrderFilter()) return;
+  var tb = document.getElementById("orderRows");
+  tb.innerHTML = loadingRow(13);
+
+  apiGet("/api/admin/orders", buildOrderQuery(true)).then(function (data) {
+    data = data || {};
+    var list = data.list || [];
+
+    // 页码越界（如筛选后结果变少）→ 回到第一页重查
+    if (!list.length && ofilter.page > 1) {
+      ofilter.page = 1;
+      loadOrders();
+      return;
+    }
+
+    ometa.total = n0(data.total);
+    ometa.page = n0(data.page) || ofilter.page;
+    ometa.pageSize = n0(data.pageSize) || ofilter.pageSize;
+
+    // 同步分页输入到筛选状态，避免翻页后状态错乱
+    ofilter.pageSize = ometa.pageSize;
+    document.getElementById("ofPageSize").value = String(ometa.pageSize);
+
+    renderOrders(list);
+    renderOrderSummary(data.summary, data, list.length);
+    renderOrderPager(data.hasMore);
+  }).catch(function (e) {
+    tb.innerHTML = emptyRow(13, "加载失败：" + errText(e));
+    toastErr("预约列表加载失败：" + errText(e));
+  });
+}
+
+/** 渲染预约表格 */
+function renderOrders(list) {
+  var tb = document.getElementById("orderRows");
+  if (!list.length) { tb.innerHTML = emptyRow(13, "暂无数据"); return; }
+
+  tb.innerHTML = list.map(function (o) {
+    // status 为派生状态（pending/using/done/canceled），rawStatus 为库中存储态，
+    // 取消/核销的可操作性以「已取消」为界，两者都判断更稳妥。
+    var canceled = (o.status === "canceled") || (o.rawStatus === "canceled");
+    var checked = !!o.checkedIn;
+
+    var checkBtn;
+    if (checked) {
+      checkBtn = "<span class='pill p-open'>已核销</span>" +
+        "<button class='btn btn-sm btn-ghost' title='误核销更正：清空核销记录，凭证恢复为待核销'" +
+        " onclick=\"rowUndoCheckin('" + esc(o.id) + "')\">撤销</button>";
+    } else {
+      checkBtn = "<button class='btn btn-sm btn-primary'" + (canceled ? " disabled" : "") +
+        " onclick=\"rowCheckin('" + esc(o.id) + "')\">核销</button>";
+    }
+
+    var cancelBtn = "<button class='btn btn-sm btn-danger'" + (canceled ? " disabled" : "") +
+      " onclick=\"rowCancel('" + esc(o.id) + "')\">取消</button>";
+
+    return "<tr>" +
+      "<td class='mono'>" + esc(o.checkinCode || "-") + "</td>" +
+      "<td class='mono'>" + esc(o.id) + "</td>" +
+      "<td><span class='pill p-user'>" + esc(o.userId) + "</span></td>" +
+      "<td>" + esc(o.nickname || "-") + "</td>" +
+      "<td>" + esc(o.roomName || o.roomId || "-") + "</td>" +
+      "<td>" + esc(o.seatNo || "-") + "</td>" +
+      "<td>" + esc(o.date || "-") + "</td>" +
+      "<td>" + esc((o.startSlot || "") + "-" + (o.endSlot || "")) + "</td>" +
+      "<td>" + esc(fmtHours(o.hours)) + "</td>" +
+      "<td>" + orderPill(o.status) + "</td>" +
+      "<td>" + checkinPill(checked) +
+        (checked && o.checkedInAt ? "<div style='font-size:11px;color:#8a93a6'>" + esc(fmtTime(o.checkedInAt)) +
+          (o.checkedInByName ? " · " + esc(o.checkedInByName) : "") + "</div>" : "") + "</td>" +
+      "<td>" + esc(fmtTime(o.createdAt)) + "</td>" +
+      "<td><div class='row-acts'>" + checkBtn + cancelBtn + "</div></td>" +
+      "</tr>";
+  }).join("");
+}
+
+/** 本次筛选结果的统计条 */
+function renderOrderSummary(summary, data, listLength) {
+  var s = summary || {};
+  var totalCount = (s.total === undefined || s.total === null) ? n0(data.total) : n0(s.total);
+  document.getElementById("orderTotal").textContent = "共 " + n0(data.total) + " 条";
+
+  document.getElementById("orderSummary").innerHTML = [
+    "<div class='it'>总条数<b>" + totalCount + "</b></div>",
+    "<div class='it warn'>待使用<b>" + n0(s.pending) + "</b></div>",
+    "<div class='it ok'>使用中<b>" + n0(s.using) + "</b></div>",
+    "<div class='it'>已完成<b>" + n0(s.done) + "</b></div>",
+    "<div class='it bad'>已取消<b>" + n0(s.canceled) + "</b></div>",
+    "<div class='it ok'>已核销<b>" + n0(s.checkedIn) + "</b></div>",
+    "<div class='it warn'>未核销<b>" + n0(s.notCheckedIn) + "</b></div>",
+    "<div class='it'>总时长（小时）<b>" + fmtHoursTotal(s.hours) + "</b></div>",
+    "<div class='it'>本页条数<b>" + listLength + "</b></div>"
+  ].join("");
+}
+
+/** 分页控件 */
+function renderOrderPager(hasMore) {
+  var total = ometa.total;
+  var size = ometa.pageSize || 20;
+  var page = ometa.page || 1;
+  var pages = Math.max(1, Math.ceil(total / size));
+  if (page > pages) page = pages;
+
+  document.getElementById("orderPager").innerHTML =
+    "<span>共 " + total + " 条 · 第 " + page + " / " + pages + " 页</span>" +
+    "<button class='btn btn-ghost btn-sm'" + (page <= 1 ? " disabled" : "") + " onclick='gotoOrderPage(" + (page - 1) + ")'>上一页</button>" +
+    "<button class='btn btn-ghost btn-sm'" + ((page >= pages && !hasMore) ? " disabled" : "") + " onclick='gotoOrderPage(" + (page + 1) + ")'>下一页</button>" +
+    "<select style='width:90px' onchange='changeOrderPageSize(this.value)'>" +
+      [10, 20, 30, 50].map(function (n) {
+        return "<option value='" + n + "'" + (n === size ? " selected" : "") + ">" + n + " 条/页</option>";
+      }).join("") +
+    "</select>";
+}
+
+function gotoOrderPage(p) {
+  if (p < 1) return;
+  ofilter.page = p;
+  loadOrders();
+}
+
+function changeOrderPageSize(v) {
+  var size = Number(v) || 20;
+  ofilter.pageSize = size;
+  ofilter.page = 1;
+  document.getElementById("ofPageSize").value = String(size);
+  loadOrders();
+}
+
+/** 单行核销（PUT /api/admin/orders/:id/checkin） */
+function rowCheckin(id) {
+  if (!confirm("确定核销订单 " + id + " 吗？")) return;
+  doRowCheckin(id, false);
+}
+
+function doRowCheckin(id, force) {
+  apiSend("PUT", "/api/admin/orders/" + encodeURIComponent(id) + "/checkin", { force: !!force })
+    .then(function (data) {
+      var o = (data && data.order) || {};
+      toastOk("核销成功：" + (o.id || id) + (o.seatNo ? " · 座位 " + o.seatNo : ""));
+      loadOrders();
+    })
+    .catch(function (e) {
+      if (!force && forceable(e)) {
+        if (confirm(errText(e) + "\n\n是否强制核销该预约？")) doRowCheckin(id, true);
+      } else {
+        toastErr("核销失败：" + errText(e));
+      }
+    });
+}
+
+/** 撤销误核销（DELETE /api/admin/orders/:id/checkin）：前台误扫更正 */
+function rowUndoCheckin(id) {
+  if (!confirm("确定撤销订单 " + id + " 的核销记录吗？撤销后凭证恢复为「待核销」，学生会收到通知。")) return;
+  apiSend("DELETE", "/api/admin/orders/" + encodeURIComponent(id) + "/checkin")
+    .then(function (data) {
+      var o = (data && data.order) || {};
+      toastOk("已撤销核销：" + (o.id || id));
+      loadOrders();
+      if (App.tab === "overview") loadOverview(true);
+    })
+    .catch(function (e) { toastErr("撤销失败：" + errText(e)); });
+}
+
+/** 输入核销码核销（POST /api/admin/checkin） */
+function submitCheckinByCode() {
+  var input = document.getElementById("checkinCode");
+  var code = input.value.replace(/\s/g, "");
+  if (!/^\d{8}$/.test(code)) {
+    toastErr("核销码应为 8 位数字");
+    input.focus();
+    return;
+  }
+  doCheckinByCode(code, false);
+}
+
+function doCheckinByCode(code, force) {
+  apiSend("POST", "/api/admin/checkin", { code: code, force: !!force })
+    .then(function (data) {
+      var o = (data && data.order) || {};
+      toastOk("核销成功：" + (o.id || code) + (o.seatNo ? " · 座位 " + o.seatNo : ""));
+      document.getElementById("checkinCode").value = "";
+      loadOrders();
+      if (App.tab === "overview") loadOverview(true);
+    })
+    .catch(function (e) {
+      if (!force && forceable(e)) {
+        if (confirm(errText(e) + "\n\n是否强制核销？")) doCheckinByCode(code, true);
+      } else {
+        toastErr("核销失败：" + errText(e));
+      }
+    });
+}
+
+/** 是否属于「可强制核销」的错误（已核销 / 已取消 属于终态，不可强推） */
+function forceable(e) {
+  if (!e || e.code !== 400) return false;
+  var m = String(e.message || "");
+  if (m.indexOf("已核销") >= 0) return false;
+  if (m.indexOf("已取消") >= 0) return false;
+  return true;
+}
+
+/** 取消预约（PUT /api/admin/orders/:id/cancel） */
+function rowCancel(id) {
+  if (!confirm("确定取消订单 " + id + " 吗？取消后学生将收到通知。")) return;
+  apiSend("PUT", "/api/admin/orders/" + encodeURIComponent(id) + "/cancel", { reason: "管理端取消预约" })
+    .then(function (data) {
+      var o = (data && data.order) || {};
+      toastOk("已取消预约：" + (o.id || id));
+      loadOrders();
+      if (App.tab === "overview") loadOverview(true);
+    })
+    .catch(function (e) {
+      alert("取消失败：" + errText(e));
+    });
+}
+
+/** 导出 Excel：必须带 Authorization 头取 blob，再用隐藏 a 标签下载 */
+function exportOrders() {
+  if (!readOrderFilter()) return;
+  var url = "/api/admin/orders/export" + qs(buildOrderQuery(false));
+  var filename = "预约名单_" + todayCompact() + ".xlsx";
+  toast("正在导出，请稍候…");
+
+  fetch(url, { method: "GET", headers: authHeaders() }).then(function (res) {
+    var ct = res.headers.get("content-type") || "";
+    if (!res.ok || ct.indexOf("json") >= 0) {
+      return res.text().then(function (t) {
+        var msg = "导出失败（HTTP " + res.status + "）";
+        var j = null;
+        try { j = JSON.parse(t); } catch (e) { j = null; }
+        if (j && j.message) {
+          msg = j.message;
+          if (j.code === 401) handleUnauthorized(j.message);
+        }
+        throw beErr(res.status, msg);
+      });
+    }
+    return res.blob().then(function (blob) {
+      var objUrl = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = objUrl;
+      a.download = filename;
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () {
+        if (a.parentNode) a.parentNode.removeChild(a);
+        URL.revokeObjectURL(objUrl);
+      }, 1500);
+      toastOk("已开始下载：" + filename);
+    });
+  }).catch(function (e) {
+    toastErr("导出失败：" + errText(e));
+  });
+}
+
+/** 打印：先同步开新窗口（避免被拦截），再用 fetch 带 token 取 HTML 写入 */
+function printOrders() {
+  if (!readOrderFilter()) return;
+  var url = "/api/admin/orders/print" + qs(buildOrderQuery(false));
+
+  var win = window.open("", "_blank");
+  if (!win) { toastErr("浏览器拦截了新窗口，请允许弹出窗口后重试"); return; }
+  try {
+    win.document.open();
+    win.document.write("<p style='font-family:sans-serif;padding:24px'>正在生成打印页面…</p>");
+    win.document.close();
+  } catch (e) { /* 忽略 */ }
+
+  fetch(url, { method: "GET", headers: authHeaders() }).then(function (res) {
+    return res.text().then(function (t) {
+      if (!res.ok) {
+        var msg = "打印页生成失败（HTTP " + res.status + "）";
+        var j = null;
+        try { j = JSON.parse(t); } catch (e) { j = null; }
+        if (j && j.message) {
+          msg = j.message;
+          if (j.code === 401) handleUnauthorized(j.message);
+        }
+        throw beErr(res.status, msg);
+      }
+      return t;
+    });
+  }).then(function (html) {
+    try {
+      win.document.open();
+      win.document.write(html);   // 打印页自带打印按钮与自动打印
+      win.document.close();
+    } catch (e) {
+      toastErr("写入打印窗口失败：" + errText(e));
+    }
+  }).catch(function (e) {
+    toastErr("打印失败：" + errText(e));
+    try {
+      win.document.open();
+      win.document.write("<p style='font-family:sans-serif;padding:24px'>打印失败：" + esc(errText(e)) + "</p>");
+      win.document.close();
+    } catch (e2) { /* 忽略 */ }
+  });
+}
+
+
+/* ============================================================================
+ * 9. 用户管理
+ * ========================================================================== */
+
+function searchUsers() {
+  ufilter.keyword = document.getElementById("ufKeyword").value.replace(/^\s+|\s+$/g, "");
+  ufilter.page = 1;
+  loadUsers();
+}
+
+function resetUserSearch() {
+  document.getElementById("ufKeyword").value = "";
+  ufilter.keyword = "";
+  ufilter.page = 1;
+  loadUsers();
+}
+
+function loadUsers() {
+  var tb = document.getElementById("userRows");
+  tb.innerHTML = loadingRow(11);
+
+  apiGet("/api/admin/users", {
+    keyword: ufilter.keyword, page: ufilter.page, pageSize: ufilter.pageSize
+  }).then(function (data) {
+    data = data || {};
+    var list = data.list || [];
+
+    if (!list.length && ufilter.page > 1) {
+      ufilter.page = 1;
+      loadUsers();
+      return;
+    }
+
+    umeta.total = n0(data.total);
+    umeta.page = n0(data.page) || ufilter.page;
+    umeta.pageSize = n0(data.pageSize) || ufilter.pageSize;
+
+    App.users = list;   // 缓存当前页数据，编辑弹窗用于回填
+    document.getElementById("userTotal").textContent = "共 " + umeta.total + " 人";
+    renderUsers(list);
+    renderUserPager(data.hasMore);
+  }).catch(function (e) {
+    tb.innerHTML = emptyRow(10, "加载失败：" + errText(e));
+    toastErr("用户列表加载失败：" + errText(e));
+  });
+}
+
+function renderUsers(list) {
+  var tb = document.getElementById("userRows");
+  if (!list.length) { tb.innerHTML = emptyRow(11, "暂无数据"); return; }
+
+  tb.innerHTML = list.map(function (u) {
+    var credit = n0(u.credit);
+    var creditColor = credit >= 90 ? "" : (credit >= 60 ? "color:#ff9f2e" : "color:#f04b4b");
+    // 微信一键登录状态：已绑定的行给出绑定时间与解绑入口（staff 亦可操作，只断免密不动账号）
+    var wxCell = u.wxBound
+      ? "<span class='pill p-open' title='" + esc("绑定于 " + (u.wxBoundText || "")) + "'>已绑定</span>"
+      : "<span class='pill p-none'>未绑定</span>";
+    var wxBtn = u.wxBound
+      ? "<button class='btn btn-sm btn-ghost' onclick=\"unbindUserWx('" + esc(u.studentId) + "')\">解绑微信</button>"
+      : "";
+    return "<tr>" +
+      "<td class='mono'>" + esc(u.studentId) + "</td>" +
+      "<td>" + esc(u.nickname || "-") + "</td>" +
+      "<td>" + esc(u.college || "-") + "</td>" +
+      "<td style='" + creditColor + "'>" + credit + "</td>" +
+      "<td>" + n0(u.totalOrders) + "</td>" +
+      "<td>" + n0(u.activeOrders) + "</td>" +
+      "<td>" + n0(u.canceledOrders) + "</td>" +
+      "<td>" + (n0(u.unreadMessages) > 0 ? "<span class='pill p-canceled'>" + n0(u.unreadMessages) + "</span>" : "0") + "</td>" +
+      "<td>" + esc(fmtTime(u.createdAt)) + "</td>" +
+      "<td>" + wxCell + "</td>" +
+      "<td><div class='row-acts'>" +
+        "<button class='btn btn-sm btn-ghost' onclick=\"openUserModal('" + esc(u.studentId) + "')\">编辑</button>" +
+        wxBtn +
+        "<button class='btn btn-sm btn-danger' onclick=\"deleteUser('" + esc(u.studentId) + "')\">删除</button>" +
+      "</div></td>" +
+      "</tr>";
+  }).join("");
+}
+
+function renderUserPager(hasMore) {
+  var total = umeta.total;
+  var size = umeta.pageSize || 20;
+  var page = umeta.page || 1;
+  var pages = Math.max(1, Math.ceil(total / size));
+  if (page > pages) page = pages;
+
+  document.getElementById("userPager").innerHTML =
+    "<span>共 " + total + " 条 · 第 " + page + " / " + pages + " 页</span>" +
+    "<button class='btn btn-ghost btn-sm'" + (page <= 1 ? " disabled" : "") + " onclick='gotoUserPage(" + (page - 1) + ")'>上一页</button>" +
+    "<button class='btn btn-ghost btn-sm'" + ((page >= pages && !hasMore) ? " disabled" : "") + " onclick='gotoUserPage(" + (page + 1) + ")'>下一页</button>";
+}
+
+function gotoUserPage(p) {
+  if (p < 1) return;
+  ufilter.page = p;
+  loadUsers();
+}
+
+/** 当前正在编辑的用户（新增时为 null） */
+var editingUser = null;
+
+/** 从缓存的学生列表里找一行 */
+function findUser(studentId) {
+  for (var i = 0; i < App.users.length; i++) {
+    if (String(App.users[i].studentId) === String(studentId)) return App.users[i];
+  }
+  return null;
+}
+
+/** 打开新增 / 编辑用户弹窗 */
+function openUserModal(studentId) {
+  var u = studentId ? (findUser(studentId) || { studentId: studentId }) : null;
+  editingUser = u;
+
+  document.getElementById("userModalTitle").textContent = u ? "编辑学生 · " + u.studentId : "新增学生用户";
+  document.getElementById("uStudentId").value = u ? u.studentId : "";
+  document.getElementById("uStudentId").disabled = !!u;   // 学号为主键，编辑时不可改
+  document.getElementById("uNickname").value = u ? (u.nickname || "") : "";
+  document.getElementById("uCollege").value = u ? (u.college || "") : "";
+  document.getElementById("uCredit").value = u ? String(n0(u.credit)) : "100";
+  document.getElementById("uPassword").value = "";
+  document.getElementById("uPasswordLabel").innerHTML = u
+    ? "重置密码（留空则不修改）"
+    : "登录密码 <span class='req'>*</span>";
+  document.getElementById("userModalTip").textContent = u
+    ? "提示：昵称/学院/信用分提交时会按填写内容更新，密码留空则不修改。"
+    : "提示：学号即登录账号，密码至少 6 位。";
+
+  showModalErr("userErr", "");
+  showModal("userMask");
+}
+
+/** 保存用户（新增 / 编辑） */
+function saveUser() {
+  var studentId = document.getElementById("uStudentId").value.replace(/^\s+|\s+$/g, "");
+  var nickname = document.getElementById("uNickname").value.replace(/^\s+|\s+$/g, "");
+  var college = document.getElementById("uCollege").value.replace(/^\s+|\s+$/g, "");
+  var creditRaw = document.getElementById("uCredit").value.replace(/^\s+|\s+$/g, "");
+  var password = document.getElementById("uPassword").value;
+  var isEdit = !!editingUser;
+
+  if (!studentId) return showModalErr("userErr", "请填写学号");
+  if (!/^[0-9A-Za-z]{4,20}$/.test(studentId)) return showModalErr("userErr", "学号只能是 4-20 位字母或数字");
+  if (!isEdit && !password) return showModalErr("userErr", "请填写登录密码");
+  if (password && password.length < 6) return showModalErr("userErr", "密码至少 6 位");
+  if (password && password.length > 32) return showModalErr("userErr", "密码不能超过 32 位");
+  if (!nickname && !isEdit) return showModalErr("userErr", "请填写昵称");
+  if (nickname.length > 32) return showModalErr("userErr", "昵称不能超过 32 个字符");
+  if (college.length > 32) return showModalErr("userErr", "学院不能超过 32 个字符");
+  if (creditRaw !== "" && (!/^\d+$/.test(creditRaw) || Number(creditRaw) > 1000)) {
+    return showModalErr("userErr", "信用分需为 0-1000 之间的整数");
+  }
+
+  var btn = document.getElementById("userSaveBtn");
+  btn.disabled = true;
+  btn.textContent = "保存中…";
+  showModalErr("userErr", "");
+
+  var p;
+  if (isEdit) {
+    var body = {};
+    if (nickname) body.nickname = nickname;
+    if (college) body.college = college;
+    if (creditRaw !== "") body.credit = Number(creditRaw);
+    if (password) body.password = password;
+    p = apiSend("PUT", "/api/admin/users/" + encodeURIComponent(studentId), body);
+  } else {
+    p = apiSend("POST", "/api/admin/users", {
+      studentId: studentId,
+      password: password,
+      nickname: nickname,
+      college: college,
+      credit: creditRaw === "" ? 100 : Number(creditRaw)
+    });
+  }
+
+  p.then(function () {
+    closeModal("userMask");
+    toastOk(isEdit ? "已保存学生 " + studentId : "已新增学生 " + studentId);
+    loadUsers();
+  }).catch(function (e) {
+    showModalErr("userErr", (isEdit ? "保存失败：" : "新增失败：") + errText(e));
+  }).then(function () {
+    btn.disabled = false;
+    btn.textContent = "保存";
+  });
+}
+
+/** 删除用户（后端拒绝时展示中文原因） */
+function deleteUser(studentId) {
+  if (!confirm("确定删除学生 " + studentId + " 吗？其历史预约与消息也会一并删除。")) return;
+  apiSend("DELETE", "/api/admin/users/" + encodeURIComponent(studentId)).then(function () {
+    toastOk("已删除学生 " + studentId);
+    loadUsers();
+  }).catch(function (e) {
+    alert("删除失败：" + errText(e));
+  });
+}
+
+/**
+ * 解除某学生的微信一键登录：只断免密通道，账号、密码与历史预约都不动。
+ * 后端会连同该学生的全部会话一起作废，他下次必须用学号密码重新登录。
+ */
+function unbindUserWx(studentId) {
+  if (!confirm("确定解除学生 " + studentId + " 的微信一键登录吗？\n该学生当前登录会被强制下线，需重新用学号密码登录。")) return;
+  apiSend("POST", "/api/admin/users/" + encodeURIComponent(studentId) + "/wx-unbind").then(function (d) {
+    var n = (d && d.sessionsCleared) || 0; // apiSend 已拆包，d 即接口 data
+    toastOk("已解除 " + studentId + " 的微信绑定" + (n ? "（下线 " + n + " 个会话）" : ""));
+    loadUsers();
+  }).catch(function (e) {
+    alert("解绑失败：" + errText(e));
+  });
+}
+
+
+/* ============================================================================
+ * 10. 弹窗与提示通用方法
+ * ========================================================================== */
+
+function showModal(id) { document.getElementById(id).className = "mask show"; }
+function closeModal(id) { document.getElementById(id).className = "mask"; }
+
+/** 概览页「最近消息」入口按钮：内容已在 loadOverview 里渲染进弹窗，这里只负责打开 */
+function openMsgModal() {
+  showModal("msgMask");
+}
+
+/** 弹窗内错误提示 */
+function showModalErr(elId, msg) {
+  var el = document.getElementById(elId);
+  if (!msg) {
+    el.style.display = "none";
+    el.textContent = "";
+    return false;
+  }
+  el.textContent = msg;
+  el.style.display = "block";
+  return false;
+}
+
+
+/* ============================================================================
+ * 11. 启动引导与全局事件绑定
+ * ========================================================================== */
+
+/** 启动：有 token 就用 /api/admin/me 校验，否则显示登录页 */
+function boot() {
+  var t = getToken();
+  if (!t) { showLogin(); return; }
+
+  App.token = t;
+  apiGet("/api/admin/me").then(function (data) {
+    App.admin = (data && data.admin) || null;
+    renderAdmin();
+    showApp();
+    switchTab("overview", true);
+  }).catch(function (e) {
+    // 401 已由 request 统一处理（清 token + 回登录页 + 提示）
+    if (e.code !== 401) {
+      showLogin();
+      document.getElementById("loginErr").textContent = "校验登录状态失败：" + errText(e);
+      document.getElementById("loginErr").style.display = "block";
+    }
+  });
+}
+
+/* 登录页回车提交 */
+document.getElementById("loginUser").addEventListener("keydown", function (ev) {
+  if (ev.keyCode === 13) { document.getElementById("loginPass").focus(); }
+});
+document.getElementById("loginPass").addEventListener("keydown", function (ev) {
+  if (ev.keyCode === 13) doLogin();
+});
+
+/* 核销码输入框回车提交 */
+document.getElementById("checkinCode").addEventListener("keydown", function (ev) {
+  if (ev.keyCode === 13) submitCheckinByCode();
+});
+
+/* 关键词回车查询 */
+document.getElementById("ofKeyword").addEventListener("keydown", function (ev) {
+  if (ev.keyCode === 13) searchOrders();
+});
+document.getElementById("ufKeyword").addEventListener("keydown", function (ev) {
+  if (ev.keyCode === 13) searchUsers();
+});
+
+/* 点击遮罩关闭弹窗 */
+["roomMask", "userMask", "msgMask"].forEach(function (id) {
+  var el = document.getElementById(id);
+  el.addEventListener("click", function (ev) {
+    if (ev.target === el) closeModal(id);
+  });
+});
+
+/* ESC 关闭弹窗 */
+document.addEventListener("keydown", function (ev) {
+  if (ev.keyCode === 27) {
+    closeModal("roomMask");
+    closeModal("userMask");
+    closeModal("msgMask");
+  }
+});
+
+/* 页面重新可见时，如果停在概览页则立即刷新一次 */
+document.addEventListener("visibilitychange", function () {
+  if (!document.hidden && App.tab === "overview" && App.admin) loadOverview(true);
+});
+
+boot();
+</script>
+</body>
+</html>

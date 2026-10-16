@@ -1,0 +1,35 @@
+.section-head {
+  padding: 8rpx 4rpx 20rpx;
+}
+.bar {
+  width: 8rpx;
+  height: 32rpx;
+  border-radius: 4rpx;
+  background: linear-gradient(180deg, #4c7cff, #1e43d8);
+  margin-right: 16rpx;
+}
+.title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #1f2430;
+}
+.sub {
+  font-size: 22rpx;
+  color: #8a93a6;
+  margin-left: 16rpx;
+}
+.more {
+  font-size: 24rpx;
+  color: #8a93a6;
+  display: flex;
+  align-items: center;
+}
+.more::after {
+  content: "";
+  width: 12rpx;
+  height: 12rpx;
+  border-right: 3rpx solid #b6bdca;
+  border-bottom: 3rpx solid #b6bdca;
+  transform: rotate(-45deg);
+  margin-left: 10rpx;
+}

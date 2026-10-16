@@ -1,0 +1,224 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 登录页：学号登录 / 自助开户在同一页切换（JS 交互：表单校验 / 密码显隐 / 协议勾选 / 一键获取微信信息 / 微信一键登录 / 注册即登录） -->
+<view class="login-page">
+  <view class="brand-zone flex-col flex-center">
+    <image class="brand-logo" src="/images/logo.png" mode="aspectFit" />
+    <view class="brand-title">慧自习</view>
+    <view class="brand-slogan">校园自习室预约 · 让努力不迟到</view>
+  </view>
+
+  <view class="form-card">
+    <!-- 模式切换：复用公共 chip 样式 -->
+    <view class="mode-row flex">
+      <view class="chip {{mode === 'login' ? 'chip-active' : ''}}" data-mode="login" bindtap="switchMode">
+        学号登录
+      </view>
+      <view class="chip {{mode === 'register' ? 'chip-active' : ''}}" data-mode="register" bindtap="switchMode">
+        自助开户
+      </view>
+    </view>
+
+    <view class="form-item">
+      <view class="form-label">学号</view>
+      <input
+        class="form-input {{focusId ? 'form-input-focus' : ''}}"
+        type="number"
+        maxlength="12"
+        placeholder="请输入 8-12 位学号"
+        placeholder-class="ph"
+        value="{{studentId}}"
+        bindinput="onInputStudentId"
+        bindfocus="onFocusId"
+        bindblur="onBlurId"
+      />
+      <view class="form-error" wx:if="{{errors.studentId}}">{{errors.studentId}}</view>
+    </view>
+
+    <view class="form-item">
+      <view class="form-label">密码</view>
+      <view class="pwd-row">
+        <input
+          class="form-input flex-1 {{focusPwd ? 'form-input-focus' : ''}}"
+          password="{{!showPwd}}"
+          maxlength="20"
+          placeholder="{{mode === 'login' ? '请输入密码（不少于 6 位）' : '请设置密码（不少于 6 位）'}}"
+          placeholder-class="ph"
+          value="{{password}}"
+          bindinput="onInputPassword"
+          bindfocus="onFocusPwd"
+          bindblur="onBlurPwd"
+        />
+        <view class="pwd-eye" bindtap="togglePwd">{{showPwd ? "隐藏" : "显示"}}</view>
+      </view>
+      <view class="form-error" wx:if="{{errors.password}}">{{errors.password}}</view>
+    </view>
+
+    <!-- 开户态独有：确认密码 + 昵称（选填） + 学院 -->
+    <block wx:if="{{mode === 'register'}}">
+      <view class="form-item">
+        <view class="form-label">确认密码</view>
+        <input
+          class="form-input"
+          password="{{!showPwd}}"
+          maxlength="20"
+          placeholder="请再次输入密码"
+          placeholder-class="ph"
+          value="{{password2}}"
+          bindinput="onInputPassword2"
+          bindblur="onBlurPwd2"
+        />
+        <view class="form-error" wx:if="{{errors.password2}}">{{errors.password2}}</view>
+      </view>
+
+      <view class="form-item">
+        <view class="form-label">昵称（选填）</view>
+        <input
+          class="form-input"
+          maxlength="20"
+          placeholder="留空将根据学号自动生成"
+          placeholder-class="ph"
+          value="{{nickname}}"
+          bindinput="onInputNickname"
+        />
+        <view class="form-error" wx:if="{{errors.nickname}}">{{errors.nickname}}</view>
+      </view>
+
+      <view class="form-item">
+        <view class="form-label">所在学院</view>
+        <picker mode="selector" range="{{colleges}}" value="{{collegeIndex}}" bindchange="onCollegeChange">
+          <view class="form-picker">
+            <text class="{{collegeIndex >= 0 ? '' : 'ph'}}">
+              {{collegeIndex >= 0 ? colleges[collegeIndex] : "请选择所在学院"}}
+            </text>
+            <text class="picker-arrow">›</text>
+          </view>
+        </picker>
+        <view class="form-error" wx:if="{{errors.college}}">{{errors.college}}</view>
+      </view>
+    </block>
+
+    <view class="agree-row flex">
+      <view class="checkbox {{agreed ? 'checkbox-on' : ''}}" bindtap="toggleAgree"></view>
+      <view class="agree-text">
+        我已阅读并同意
+        <text class="t-primary" catchtap="openRule">《自习公约》</text>
+      </view>
+    </view>
+    <view class="form-error" wx:if="{{errors.agreed}}">{{errors.agreed}}</view>
+
+    <button class="btn btn-primary btn-block login-btn" disabled="{{submitting}}" bindtap="onSubmit">
+      {{mode === 'login' ? (submitting ? "登录中…" : "登 录") : (submitting ? "开户中…" : "注册并登录")}}
+    </button>
+
+    <!-- 微信入口：本机已绑定且有免密票据 → 「微信一键登录」；否则先「一键获取微信信息」绑学号 -->
+    <block wx:if="{{mode === 'login'}}">
+      <button
+        wx:if="{{wxQuick}}"
+        class="btn btn-ghost btn-block wx-btn wx-btn-quick"
+        disabled="{{submitting}}"
+        bindtap="onQuickLogin"
+      >微信一键登录</button>
+      <button
+        wx:elif="{{supportAvatar}}"
+        class="btn btn-ghost btn-block wx-btn"
+        open-type="chooseAvatar"
+        bindchooseavatar="onChooseAvatar"
+      >一键获取微信信息</button>
+      <button wx:else class="btn btn-ghost btn-block wx-btn" bindtap="onWxUnsupported">
+        一键获取微信信息
+      </button>
+
+      <view class="wx-tip t-weak" wx:if="{{wxQuick}}">
+        当前微信已绑定学号 {{wxQuickId}}，点上方按钮免密进入；换账号请用学号密码登录
+      </view>
+      <view class="wx-tip t-weak" wx:else>
+        首次使用：点上方按钮取微信头像，弹窗绑定学号后自动跳转自助开户，完善信息即直接登录
+      </view>
+
+      <view class="demo-tip flex-between" bindtap="fillDemo">
+        <view class="t-weak">演示账号：20210101 / 123456</view>
+        <view class="t-primary">一键填入</view>
+      </view>
+    </block>
+
+    <view class="visitor flex-center" bindtap="backBrowse">
+      <text class="t-weak">暂不登录，先随便逛逛 ›</text>
+    </view>
+  </view>
+</view>

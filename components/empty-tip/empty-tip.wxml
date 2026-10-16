@@ -1,0 +1,8 @@
+<view class="empty-wrap">
+  <image class="empty-icon" src="{{icon}}" mode="aspectFit" lazy-load />
+  <view class="empty-text">{{text}}</view>
+  <view class="empty-desc" wx:if="{{desc}}">{{desc}}</view>
+  <view class="btn btn-plain btn-mini empty-btn" wx:if="{{btnText}}" bindtap="onAction">
+    {{btnText}}
+  </view>
+</view>

@@ -1,0 +1,55 @@
+{
+  "entryPagePath": "pages/index/index",
+  "pages": [
+    "pages/index/index",
+    "pages/login/login",
+    "pages/rooms/rooms",
+    "pages/room-detail/room-detail",
+    "pages/orders/orders",
+    "pages/order-result/order-result",
+    "pages/profile/profile",
+    "pages/messages/messages"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#2F5BFF",
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "慧自习",
+    "backgroundColor": "#F4F6FA",
+    "backgroundTextStyle": "light"
+  },
+  "tabBar": {
+    "color": "#8A93A6",
+    "selectedColor": "#2F5BFF",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "images/tab-home.png",
+        "selectedIconPath": "images/tab-home-active.png"
+      },
+      {
+        "pagePath": "pages/rooms/rooms",
+        "text": "自习室",
+        "iconPath": "images/tab-rooms.png",
+        "selectedIconPath": "images/tab-rooms-active.png"
+      },
+      {
+        "pagePath": "pages/orders/orders",
+        "text": "预约",
+        "iconPath": "images/tab-orders.png",
+        "selectedIconPath": "images/tab-orders-active.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的",
+        "iconPath": "images/tab-profile.png",
+        "selectedIconPath": "images/tab-profile-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json"
+}

@@ -1,0 +1,68 @@
+<!-- 个人中心：登录态展示 / 统计 / 功能入口 / 退出登录 -->
+<view class="profile-page">
+  <view class="p-hero flex">
+    <image class="p-avatar" src="{{user.avatar || '/images/avatar.png'}}" mode="aspectFill" lazy-load />
+    <view class="flex-col flex-1">
+      <block wx:if="{{logged}}">
+        <view class="p-name">{{user.nickname}}</view>
+        <view class="p-id">{{user.studentId}} · {{user.college}}</view>
+      </block>
+      <block wx:else>
+        <view class="p-name" bindtap="goLogin">点击登录 ›</view>
+        <view class="p-id">登录后查看预约、消息与信用分</view>
+      </block>
+    </view>
+    <view class="p-credit flex-col flex-center" bindtap="showCredit">
+      <text class="cr-num">{{logged ? stats.credit : "--"}}</text>
+      <text class="cr-label">信用分</text>
+    </view>
+  </view>
+
+  <view class="p-stats flex">
+    <view class="cell flex-col flex-center" bindtap="goOrders">
+      <text class="num">{{logged ? stats.total : "--"}}</text>
+      <text class="lab">历史预约</text>
+    </view>
+    <view class="vl"></view>
+    <view class="cell flex-col flex-center" bindtap="goOrders">
+      <text class="num">{{logged ? stats.active : "--"}}</text>
+      <text class="lab">进行中</text>
+    </view>
+    <view class="vl"></view>
+    <view class="cell flex-col flex-center" bindtap="goRooms">
+      <text class="num">{{stats.rooms != null ? stats.rooms : "--"}}</text>
+      <text class="lab">开放自习室</text>
+    </view>
+  </view>
+
+  <view class="menu card">
+    <view class="list-row row-arrow" bindtap="goOrders" hover-class="row-hover">
+      <text class="mi-ico">🗓️</text>
+      <text class="flex-1 t-main">我的预约</text>
+    </view>
+    <view class="list-row row-arrow" bindtap="goMessages" hover-class="row-hover">
+      <text class="mi-ico">✉️</text>
+      <text class="flex-1 t-main">消息中心</text>
+      <view class="badge" wx:if="{{unread > 0}}">{{unread > 99 ? '99+' : unread}}</view>
+    </view>
+    <view class="list-row row-arrow" bindtap="showRule" hover-class="row-hover">
+      <text class="mi-ico">📜</text>
+      <text class="flex-1 t-main">自习公约</text>
+    </view>
+    <view class="list-row row-arrow" bindtap="showHours" hover-class="row-hover">
+      <text class="mi-ico">⏰</text>
+      <text class="flex-1 t-main">开放时间说明</text>
+    </view>
+    <view class="list-row row-arrow" bindtap="showAbout" hover-class="row-hover">
+      <text class="mi-ico">ℹ️</text>
+      <text class="flex-1 t-main">关于慧自习</text>
+    </view>
+  </view>
+
+  <button class="btn btn-block logout-btn" wx:if="{{logged}}" bindtap="logout">退出登录</button>
+  <button class="btn btn-primary btn-block logout-btn" wx:else bindtap="goLogin">立即登录</button>
+
+  <view class="src-note flex-center">
+    <text class="t-weak">{{offline ? "数据来源：本地演示模式（后端未连接）" : "数据来源：Node.js 后端 · wx.request 接口通信"}}</text>
+  </view>
+</view>

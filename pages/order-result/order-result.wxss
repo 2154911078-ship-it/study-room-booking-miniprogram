@@ -1,0 +1,209 @@
+/* pages/order-result */
+
+.result-page {
+  padding: 24rpx 24rpx 60rpx;
+  /* 底部安全区：避免 iPhone 小黑条遮挡最后的「返回首页」入口 */
+  padding-bottom: calc(60rpx + constant(safe-area-inset-bottom));
+  padding-bottom: calc(60rpx + env(safe-area-inset-bottom));
+}
+
+.hero-card {
+  border-radius: var(--r-lg);
+  padding: 56rpx 32rpx 96rpx;
+  color: #fff;
+}
+.hero-ok,
+.hero-pending,
+.hero-using {
+  background: linear-gradient(135deg, #4c7cff, #1e43d8);
+}
+.hero-done {
+  background: linear-gradient(135deg, #34c380, #158a52);
+}
+.hero-canceled {
+  background: linear-gradient(135deg, #9aa4b8, #6b7688);
+}
+.hero-icon {
+  width: 110rpx;
+  height: 110rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: 4rpx solid rgba(255, 255, 255, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 56rpx;
+  font-weight: 700;
+}
+.hero-title {
+  margin-top: 22rpx;
+  font-size: 40rpx;
+  font-weight: 700;
+  letter-spacing: 2rpx;
+}
+.hero-sub {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  opacity: 0.88;
+}
+
+/* ---------- 核销凭证卡（放在订单详情之上，一眼可见） ---------- */
+.checkin-card {
+  position: relative;
+  margin-top: -56rpx; /* 与 hero 卡轻微重叠，沿用本页原有视觉语言 */
+  overflow: hidden;
+  border-top: 6rpx solid var(--c-primary);
+}
+/* 有凭证卡时，订单详情不再上提，避免与凭证卡叠在一起 */
+.checkin-card + .info-card {
+  margin-top: var(--sp-3);
+}
+.checkin-done {
+  border-top-color: var(--c-success);
+}
+.checkin-void {
+  border-top-color: var(--c-line);
+}
+
+.ck-head {
+  padding-bottom: var(--sp-2);
+  border-bottom: 2rpx dashed var(--c-line);
+}
+.ck-title {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--c-text);
+}
+.ck-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 40rpx;
+  padding: 0 16rpx;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-xs);
+  background: #fff3e0;
+  color: var(--c-warn);
+}
+.ck-badge-done {
+  background: #e2f7ec;
+  color: var(--c-success);
+}
+.ck-badge-off {
+  background: #eef0f5;
+  color: var(--c-text-weak);
+}
+
+.ck-tip {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  line-height: 1.6;
+}
+
+/* 核销码：等宽字体 + 每 4 位一组 + 加宽字间距，方便管理员读数 */
+.ck-code-box {
+  margin-top: var(--sp-3);
+  padding: 30rpx 0;
+  border-radius: var(--r-md);
+  background: linear-gradient(135deg, #eef3ff, #dfe9ff);
+  border: 2rpx dashed rgba(47, 91, 255, 0.35);
+}
+.ck-code {
+  font-family: Consolas, Menlo, "Courier New", monospace;
+  font-size: 68rpx;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 10rpx;
+  padding-left: 10rpx; /* 抵消末位字间距，视觉居中 */
+  color: var(--c-primary);
+}
+.ck-code-empty {
+  padding: 36rpx 0;
+  background: #f7f8fc;
+  border: 2rpx solid var(--c-line);
+}
+.ck-code-off {
+  padding: 22rpx 0;
+  background: #f7f8fc;
+  border: 2rpx solid var(--c-line);
+}
+.ck-code-muted {
+  font-size: 40rpx;
+  letter-spacing: 6rpx;
+  color: var(--c-text-weak);
+}
+.ck-note {
+  margin-top: var(--sp-2);
+  line-height: 1.6;
+}
+.ck-row {
+  padding: 14rpx 0;
+}
+.ck-row .t-weak {
+  flex-shrink: 0;
+  margin-right: 32rpx;
+}
+.ck-val {
+  font-size: var(--fs-sm);
+  color: var(--c-text);
+  max-width: 420rpx;
+  text-align: right;
+}
+
+.info-card {
+  margin-top: -56rpx;
+}
+.irow {
+  padding: 16rpx 0;
+}
+.irow .t-weak {
+  flex-shrink: 0;
+  margin-right: 32rpx;
+}
+.ival {
+  font-size: 28rpx;
+  color: var(--c-text);
+  max-width: 440rpx;
+  text-align: right;
+}
+
+.rule-card {
+  margin-top: 24rpx;
+}
+.rule-line {
+  margin-top: 10rpx;
+  line-height: 1.7;
+}
+.cancel-btn {
+  margin-top: 24rpx;
+  width: 220rpx;
+}
+
+.actions {
+  margin-top: 40rpx;
+}
+.act-gap {
+  margin-left: 24rpx;
+}
+.home-link {
+  margin-top: 28rpx;
+  padding: 12rpx;
+}
+
+.loading-block {
+  padding: 200rpx 0;
+  gap: 16rpx;
+}
+.spinner {
+  width: 34rpx;
+  height: 34rpx;
+  border: 4rpx solid #d7deef;
+  border-top-color: var(--c-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,0 +1,92 @@
+/* pages/rooms */
+
+.rooms-page {
+  padding: 24rpx 24rpx 48rpx;
+}
+
+.search-bar {
+  margin-bottom: 20rpx;
+}
+.search-box2 {
+  height: 80rpx;
+  background: #fff;
+  border-radius: 999rpx;
+  padding: 0 26rpx;
+  box-sizing: border-box;
+  box-shadow: 0 6rpx 20rpx rgba(31, 36, 48, 0.05);
+}
+.search-ico {
+  font-size: 26rpx;
+  margin-right: 14rpx;
+}
+.search-input {
+  font-size: 28rpx;
+}
+.ph {
+  color: #b6bdca;
+}
+.clear {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  background: #eef0f5;
+  color: #8a93a6;
+  font-size: 22rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.search-btn {
+  margin-left: 20rpx;
+  height: 80rpx;
+  padding: 0 30rpx;
+  border-radius: 999rpx;
+  background: var(--c-primary);
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.chips-scroll {
+  white-space: nowrap;
+  margin-bottom: 20rpx;
+}
+.chips-row {
+  display: inline-block;
+  padding: 4rpx 0;
+}
+
+.count-line {
+  padding: 0 8rpx 16rpx;
+}
+
+.room-cell {
+  margin-bottom: 20rpx;
+}
+
+.load-more {
+  padding: 26rpx 0 8rpx;
+  color: var(--c-text-weak);
+  font-size: 24rpx;
+  gap: 12rpx;
+}
+.loading-block {
+  padding: 140rpx 0;
+  gap: 16rpx;
+}
+.spinner {
+  width: 30rpx;
+  height: 30rpx;
+  border: 4rpx solid #d7deef;
+  border-top-color: var(--c-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 14rpx;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

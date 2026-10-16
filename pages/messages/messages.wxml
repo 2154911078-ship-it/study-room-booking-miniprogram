@@ -1,0 +1,43 @@
+<!-- 消息中心：下拉刷新 + 上拉分页 + 点击已读跳转 + 全部已读 -->
+<view class="msg-page">
+  <view class="msg-head flex-between">
+    <view class="t-title">全部消息<text class="t-weak" wx:if="{{unread > 0}}">（{{unread}} 条未读）</text></view>
+    <view class="btn btn-plain btn-mini {{unread > 0 ? '' : 'disabled'}}" bindtap="readAll">全部已读</view>
+  </view>
+
+  <block wx:if="{{logged}}">
+    <view class="msg-list" wx:if="{{list.length > 0}}">
+      <view class="msg-item" wx:for="{{list}}" wx:key="id" data-index="{{index}}" bindtap="openMsg" hover-class="item-hover">
+        <view class="mi-top flex">
+          <view class="tag {{item.typeCls}}">{{item.typeText}}</view>
+          <view class="mi-title flex-1 ellipsis">{{item.title}}</view>
+          <view class="dot-unread" wx:if="{{!item.read}}"></view>
+        </view>
+        <view class="mi-content {{item.expanded ? 'mi-open' : 'mi-clamp'}}">{{item.content}}</view>
+        <view class="mi-foot flex-between">
+          <text class="t-weak">{{item.timeText}}</text>
+          <text class="t-primary mi-link" wx:if="{{item.roomId}}">查看自习室 ›</text>
+          <text class="t-primary mi-link" wx:elif="{{item.type === 'order'}}">查看我的预约 ›</text>
+        </view>
+      </view>
+
+      <view class="load-more flex-center" wx:if="{{loadingMore}}">正在加载…</view>
+      <view class="load-more flex-center" wx:elif="{{!hasMore}}">— 已经到底啦 —</view>
+    </view>
+
+    <empty-tip wx:elif="{{!loading}}" text="暂无消息" desc="预约动态会第一时间出现在这里" />
+
+    <view wx:else class="loading-block flex-center">
+      <view class="spinner"></view>
+      <text class="t-weak">加载中…</text>
+    </view>
+  </block>
+
+  <empty-tip
+    wx:else
+    text="登录后查看消息提醒"
+    desc="预约成功、取消与信用分变动都会推送"
+    btn-text="去登录"
+    bind:action="goLogin"
+  />
+</view>

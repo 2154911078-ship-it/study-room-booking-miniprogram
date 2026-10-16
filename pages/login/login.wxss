@@ -1,0 +1,122 @@
+/* pages/login */
+
+.login-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #dfe9ff 0%, var(--c-bg) 46%);
+  padding-bottom: 80rpx;
+}
+.brand-zone {
+  padding: 88rpx 0 56rpx;
+}
+.brand-logo {
+  width: 148rpx;
+  height: 148rpx;
+  border-radius: 36rpx;
+  box-shadow: 0 16rpx 40rpx rgba(47, 91, 255, 0.28);
+}
+.brand-title {
+  margin-top: 24rpx;
+  font-size: 44rpx;
+  font-weight: 700;
+  color: var(--c-primary-deep);
+  letter-spacing: 4rpx;
+}
+.brand-slogan {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: var(--c-text-sub);
+}
+
+.form-card {
+  margin: 0 40rpx;
+  padding: 44rpx 40rpx 32rpx;
+}
+.ph {
+  color: #b6bdca;
+}
+.pwd-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.pwd-eye {
+  position: absolute;
+  right: 20rpx;
+  top: 0;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  font-size: 24rpx;
+  color: var(--c-text-weak);
+  padding-left: 16rpx;
+}
+.agree-row {
+  margin: 8rpx 0 4rpx;
+}
+.agree-text {
+  margin-left: 16rpx;
+  font-size: 24rpx;
+  color: var(--c-text-sub);
+}
+.login-btn {
+  margin-top: 36rpx;
+}
+.demo-tip {
+  margin-top: 28rpx;
+  padding: 20rpx 24rpx;
+  background: #f7f8fc;
+  border-radius: var(--r-md);
+  font-size: 24rpx;
+}
+.visitor {
+  margin-top: 24rpx;
+  padding: 12rpx;
+}
+
+/* 一键获取微信信息 / 微信一键登录（位于登录按钮下方，复用公共 .btn-ghost 描边按钮） */
+.wx-btn {
+  margin-top: 20rpx;
+}
+/* 免密入口：淡底强调，与主登录按钮区分但不抢视线 */
+.wx-btn-quick {
+  background: var(--c-primary-weak);
+  font-weight: 600;
+}
+/* 按钮下方一句说明：当前绑定学号 / 首次绑定引导 */
+.wx-tip {
+  margin-top: 16rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* 登录 / 自助开户切换（复用公共 .chip 样式） */
+.mode-row {
+  margin-bottom: 28rpx;
+}
+.mode-row .chip {
+  flex: 1;
+  justify-content: center;
+}
+.mode-row .chip:last-child {
+  margin-right: 0;
+}
+
+/* 学院选择器：外观与公共 .form-input 对齐 */
+.form-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 88rpx;
+  box-sizing: border-box;
+  padding: 0 var(--sp-3);
+  background: #f7f8fc;
+  border: 2rpx solid var(--c-line);
+  border-radius: var(--r-md);
+  font-size: var(--fs-md);
+  color: var(--c-text);
+}
+.picker-arrow {
+  color: var(--c-text-weak);
+  font-size: 34rpx;
+}

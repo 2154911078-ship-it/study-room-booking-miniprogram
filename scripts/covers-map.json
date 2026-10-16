@@ -1,0 +1,59 @@
+{
+  "_说明": "图片对应表。src=方形原图(1:1)；srcCard=已裁成卡片比例(1.92:1)，用于首页热门卡片；srcDetail=已裁成详情页比例(2.21:1)的图，**放了就用它满幅铺满详情页，没放则自动回退为方图虚化补边**；out/outCard 是输出到 images/ 的文件名。",
+  "_用法": "改好本表后运行： pwsh -File scripts/compose-covers.ps1",
+  "_详情图命名": "按 _690x360 那套的同名规则，把后缀换成 _1125x510 即可（见每项的 srcDetail）。",
+  "srcDir": "D:\\桌面\\新建文件夹 (3)",
+  "canvas": {
+    "width": 1125,
+    "height": 510,
+    "cardWidth": 690,
+    "cardHeight": 360,
+    "quality": 85,
+    "cropTop": 0.12,
+    "cropCardTop": 0.12
+  },
+  "items": [
+    { "id": "r1", "out": "cover-1.jpg", "outCard": "hot-jingyuan-a.jpg",
+      "src": "静远楼 A・静音自习室.png",
+      "srcCard": "静远楼 A_静音自习室_690x360.png",
+      "srcDetail": "静远楼 A_静音自习室_1125x510.png" },
+    { "id": "r2", "out": "cover-2.jpg", "outCard": "hot-zhiyuan-lib.jpg",
+      "src": "致远图书馆综合自习区.png",
+      "srcCard": "致远图书馆_综合自习区_690x360.png",
+      "srcDetail": "致远图书馆_综合自习区_1125x510.png" },
+    { "id": "r3", "out": "cover-3.jpg", "outCard": "hot-mingli-b.jpg",
+      "src": "明理楼 B・考研自习室.png",
+      "srcCard": "明理楼 B_考研自习室_690x360.png",
+      "srcDetail": "明理楼 B_考研自习室_1125x510.png" },
+    { "id": "r4", "out": "cover-4.jpg", "outCard": "hot-student-center.jpg",
+      "src": "学生活动中心・自习区.png",
+      "srcCard": "学生活动中心_自习区_690x360.png",
+      "srcDetail": "学生活动中心_自习区_1125x510.png" },
+    { "id": "r5", "out": "cover-5.jpg", "outCard": "hot-changfeng-c.jpg",
+      "src": "长风楼 C・晚间自习区.png",
+      "srcCard": "长风楼 C_晚间自习区_690x360.png",
+      "srcDetail": "长风楼 C_晚间自习区_1125x510.png" },
+    { "id": "r6", "out": "cover-6.jpg", "outCard": "hot-south-corner.jpg",
+      "src": "南区读书角.png",
+      "srcCard": "南区读书角_半开放卡座_690x360.png",
+      "srcDetail": "南区读书角_半开放卡座_1125x510.png" },
+    { "id": "r7", "out": "cover-7.jpg", "outCard": "hot-zhiyuan-window.jpg",
+      "src": "致远图书馆・4F 靠窗座.png",
+      "srcCard": "致远图书馆_4F 靠窗座_690x360.png",
+      "srcDetail": "致远图书馆_4F 靠窗座_1125x510.png" },
+    { "id": "r8", "out": "cover-8.jpg", "outCard": "hot-mingli-a.jpg",
+      "src": "明理楼 A・共享自习室.png",
+      "srcCard": "明理楼 A_共享自习室_690x360.png",
+      "srcDetail": "明理楼 A_共享自习室_1125x510.png" }
+  ],
+  "_banners说明": "首页运营轮播图：源图已是横版插画/海报，直接等比铺满裁切转 JPG（文件名对应轮播文案，便于辨认）。",
+  "banners": {
+    "width": 1125,
+    "height": 360,
+    "items": [
+      { "out": "banner-qimoji-kaowei.jpg", "src": "期末季・考位充足.png" },
+      { "out": "banner-xinguan-nanqu-wanjian.jpg", "src": "新馆开放・南区晚间自习区海报.png" },
+      { "out": "banner-wenming-xinyongfen.jpg", "src": "文明自习・信用分计划.png" }
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "我的预约",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "empty-tip": "/components/empty-tip/empty-tip",
+    "status-tag": "/components/status-tag/status-tag"
+  }
+}

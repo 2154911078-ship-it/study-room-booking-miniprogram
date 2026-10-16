@@ -1,0 +1,122 @@
+<!-- 预约结果/凭证页：接收 orderId 传参 → 查询订单 → 成功反馈与后续操作入口 -->
+<view class="result-page" wx:if="{{order}}">
+  <view class="hero-card flex-col flex-center {{fresh ? 'hero-ok' : 'hero-' + order.status}}">
+    <view class="hero-icon">{{order.status === 'canceled' ? '×' : (order.status === 'done' ? '★' : '✓')}}</view>
+    <view class="hero-title">{{fresh ? "预约成功" : statusText}}</view>
+    <view class="hero-sub">{{heroDesc}}</view>
+  </view>
+
+  <!-- 核销凭证：线下到场出示核销码，管理员核销（三种状态互斥展示） -->
+  <view class="card checkin-card" wx:if="{{checkinState === 'usable'}}">
+    <view class="ck-head flex-between">
+      <text class="ck-title">核销凭证</text>
+      <text class="ck-badge">待核销</text>
+    </view>
+    <view class="ck-tip">到馆后向管理员出示此码，由管理员核销</view>
+    <view class="ck-code-box flex-center" wx:if="{{checkinCodeText}}">
+      <text class="ck-code">{{checkinCodeText}}</text>
+    </view>
+    <view class="ck-code-box ck-code-empty flex-center" wx:else>
+      <text class="t-sub">核销码生成中，请稍后下拉重试</text>
+    </view>
+    <view class="ck-note flex-center">
+      <text class="t-weak">请于预约时段开始前 30 分钟内到场</text>
+    </view>
+  </view>
+
+  <view class="card checkin-card checkin-done" wx:elif="{{checkinState === 'checked'}}">
+    <view class="ck-head flex-between">
+      <text class="ck-title">核销凭证</text>
+      <text class="ck-badge ck-badge-done">已核销 ✓</text>
+    </view>
+    <view class="irow flex-between ck-row">
+      <text class="t-weak">核销时间</text>
+      <text class="ck-val">{{checkedInAtText ? checkedInAtText : '—'}}</text>
+    </view>
+    <view class="irow flex-between ck-row">
+      <text class="t-weak">核销操作人</text>
+      <text class="ck-val">{{checkedInByName ? checkedInByName : '—'}}</text>
+    </view>
+    <view class="ck-code-box ck-code-off flex-center">
+      <text class="ck-code ck-code-muted">{{checkinCodeText ? checkinCodeText : '核销码已失效'}}</text>
+    </view>
+  </view>
+
+  <view class="card checkin-card checkin-void" wx:else>
+    <view class="ck-head flex-between">
+      <text class="ck-title">核销凭证</text>
+      <text class="ck-badge ck-badge-off">不可用</text>
+    </view>
+    <view class="ck-tip t-sub">该预约已失效，凭证不可用</view>
+    <view class="ck-note">
+      <text class="t-weak">已取消或已完成的预约不再展示核销码，如需到馆自习请重新预约。</text>
+    </view>
+  </view>
+
+  <view class="card info-card">
+    <view class="irow flex-between">
+      <text class="t-weak">自习室</text>
+      <text class="ival ellipsis">{{order.roomName}}</text>
+    </view>
+    <view class="irow flex-between">
+      <text class="t-weak">地点</text>
+      <text class="ival">{{order.campus}} {{order.building}} {{order.floor}}</text>
+    </view>
+    <view class="irow flex-between">
+      <text class="t-weak">座位号</text>
+      <text class="ival t-primary">{{order.seatNo}}</text>
+    </view>
+    <view class="irow flex-between">
+      <text class="t-weak">日期</text>
+      <text class="ival">{{order.date}}（{{order.dateLabel}}）</text>
+    </view>
+    <view class="irow flex-between">
+      <text class="t-weak">时段</text>
+      <text class="ival">{{order.startSlot}} - {{order.endSlot}} · {{order.hours}} 小时</text>
+    </view>
+    <view class="irow flex-between">
+      <text class="t-weak">状态</text>
+      <status-tag status="{{order.status}}" />
+    </view>
+    <view class="irow flex-between" wx:if="{{order.remark}}">
+      <text class="t-weak">备注</text>
+      <text class="ival ellipsis">{{order.remark}}</text>
+    </view>
+    <view class="divider"></view>
+    <view class="irow flex-between">
+      <text class="t-weak">订单号</text>
+      <text class="ival">{{order.id}}</text>
+    </view>
+    <view class="irow flex-between">
+      <text class="t-weak">创建时间</text>
+      <text class="ival">{{order.createdText}}</text>
+    </view>
+  </view>
+
+  <view class="card rule-card" wx:if="{{order.status === 'pending' || order.status === 'using'}}">
+    <view class="t-main" style="font-weight:600">到馆须知</view>
+    <view class="t-sub rule-line">1. 请于时段开始前 30 分钟起，向管理员出示核销码完成签到（核销有效期至本时段结束）；</view>
+    <view class="t-sub rule-line">2. 未核销的预约届时未被使用将自动记为已完成，频繁爽约会扣减信用分；</view>
+    <view class="t-sub rule-line">3. 保持静音、爱护公物，守约可累积信用分。</view>
+    <button class="btn btn-danger-plain btn-mini cancel-btn" wx:if="{{order.status === 'pending'}}" bindtap="onCancel">
+      取消预约
+    </button>
+  </view>
+
+  <view class="actions flex">
+    <button class="btn btn-ghost flex-1" bindtap="goBack">{{fresh ? '继续逛逛' : '返回上一页'}}</button>
+    <button class="btn btn-primary flex-1 act-gap" bindtap="goOrders">查看我的预约</button>
+  </view>
+  <view class="home-link flex-center" bindtap="goHome">
+    <text class="t-weak">返回首页 ›</text>
+  </view>
+</view>
+
+<view wx:elif="{{loadError}}" class="page-pad">
+  <empty-tip text="订单信息加载失败" desc="订单可能已被删除，或网络异常" btn-text="重试" bind:action="retry" />
+</view>
+
+<view wx:else class="loading-block flex-center">
+  <view class="spinner"></view>
+  <text class="t-weak">查询中…</text>
+</view>

@@ -1,0 +1,114 @@
+<!-- 首页：专属 Logo 顶部区 + 公告滚动 + 数据概览 + 轮播 + 快捷入口 + 热门自习室 -->
+<view class="hero">
+  <view class="brand flex-between">
+    <view class="flex">
+      <!-- 专属 Logo：首页头部是蓝色渐变，用无底色版（logo-hero）才不显“异色块”；登录页用蓝底徽章版（logo.png）
+           两张都由 scripts/gen-brand-images.ps1 绘制 -->
+      <image class="logo" src="/images/logo-hero.png" mode="aspectFit" />
+      <view class="flex-col">
+        <text class="brand-name">慧自习</text>
+        <text class="brand-sub">校园自习室预约 · 让努力不迟到</text>
+      </view>
+    </view>
+    <view class="user-chip" bindtap="onUserChip">
+      {{logged ? nickname : "点击登录"}}
+    </view>
+  </view>
+
+  <!-- 公告栏：纵向自动轮播（swiper 交互之一） -->
+  <swiper class="notice-swiper" vertical="{{true}}" autoplay="{{true}}" circular="{{true}}" interval="3500" duration="400">
+    <swiper-item wx:for="{{notices}}" wx:key="*this">
+      <view class="notice">
+        <text class="notice-ico">🔔</text>
+        <text class="notice-txt">{{item}}</text>
+      </view>
+    </swiper-item>
+  </swiper>
+</view>
+
+<view class="body">
+  <!-- 数据概览卡（接口：/api/summary） -->
+  <view class="card stats flex">
+    <view class="stat-cell flex-1 flex-col flex-center">
+      <text class="t-num">{{summary.freeSeats || 0}}</text>
+      <text class="t-weak">空闲座位</text>
+    </view>
+    <view class="stat-line"></view>
+    <view class="stat-cell flex-1 flex-col flex-center">
+      <text class="t-num">{{summary.openCount || 0}}/{{summary.roomCount || 0}}</text>
+      <text class="t-weak">开放自习室</text>
+    </view>
+    <view class="stat-line"></view>
+    <view class="stat-cell flex-1 flex-col flex-center">
+      <text class="t-num">{{summary.todayOrders || 0}}</text>
+      <text class="t-weak">今日待用预约</text>
+    </view>
+  </view>
+
+  <!-- 搜索入口：点击跳转列表页 -->
+  <view class="search-box flex" bindtap="goRooms">
+    <text class="search-ico">🔍</text>
+    <text class="search-ph">搜索自习室 / 教学楼，如“静远楼”</text>
+  </view>
+
+  <!-- 运营轮播（横向 swiper + 指示点） -->
+  <swiper class="banner" autoplay="{{true}}" circular="{{true}}" interval="4200" duration="450" indicator-dots="{{true}}" indicator-color="rgba(255,255,255,.45)" indicator-active-color="#ffffff">
+    <swiper-item wx:for="{{banners}}" wx:key="img">
+      <view class="banner-item" data-index="{{index}}" bindtap="onBannerTap">
+        <image class="banner-img" src="{{item.img}}" mode="aspectFill" lazy-load />
+        <view class="banner-mask flex-col">
+          <text class="banner-title">{{item.title}}</text>
+          <text class="banner-sub">{{item.sub}}</text>
+        </view>
+      </view>
+    </swiper-item>
+  </swiper>
+
+  <!-- 快捷入口（图标为项目自制 PNG：images/quick-*.png，见 scripts/gen-quick-icons.ps1） -->
+  <view class="quick">
+    <view class="quick-item flex-col flex-center" bindtap="goRooms">
+      <view class="quick-ico" style="background:#e8efff">
+        <image class="quick-ico-img" src="/images/quick-study.png" mode="aspectFit" />
+      </view>
+      <text class="quick-label">预约自习</text>
+    </view>
+    <view class="quick-item flex-col flex-center" bindtap="goOrders">
+      <view class="quick-ico" style="background:#e2f7ec">
+        <image class="quick-ico-img" src="/images/quick-orders.png" mode="aspectFit" />
+      </view>
+      <text class="quick-label">我的预约</text>
+    </view>
+    <view class="quick-item flex-col flex-center" bindtap="goMessages">
+      <view class="quick-ico-wrap">
+        <view class="quick-ico" style="background:#fff3e0">
+          <image class="quick-ico-img" src="/images/quick-messages.png" mode="aspectFit" />
+        </view>
+        <view class="badge" wx:if="{{unread > 0}}">{{unread > 99 ? '99+' : unread}}</view>
+      </view>
+      <text class="quick-label">消息中心</text>
+    </view>
+    <view class="quick-item flex-col flex-center" bindtap="goProfile">
+      <view class="quick-ico" style="background:#ffecec">
+        <image class="quick-ico-img" src="/images/quick-profile.png" mode="aspectFit" />
+      </view>
+      <text class="quick-label">个人中心</text>
+    </view>
+  </view>
+
+  <!-- 热门自习室（按「近 7 天 + 未来 7 天」有效预约数动态排序；复用 room-card 竖版形态，点击带 id 跳详情） -->
+  <section-head title="热门自习室" subtitle="按近期预约热度排序" more-text="查看全部" bind:more="goRooms" />
+  <scroll-view class="hot-scroll" scroll-x="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}" enable-flex="{{true}}">
+    <view class="hot-list">
+      <view class="hot-item" wx:for="{{hotRooms}}" wx:key="id">
+        <room-card room="{{item}}" layout="vertical" bind:select="onRoomSelect" />
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="foot-brand flex-center">
+    <text>—— 慧自习 · 校园生活服务 ——</text>
+  </view>
+  <view class="foot-note flex-center" wx:if="{{offline}}">
+    <text>当前为本地演示数据模式</text>
+  </view>
+</view>

@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "慧自习",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "room-card": "/components/room-card/room-card",
+    "section-head": "/components/section-head/section-head"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "description": "慧自习 · 校园自习室预约小程序（课程演示项目）",
+  "compileType": "miniprogram",
+  "appid": "wx17462e5b1b7af122",
+  "projectname": "huizixi",
+  "libVersion": "3.4.10",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": false,
+    "checkInvalidKey": true,
+    "checkSiteMap": false,
+    "coverView": true,
+    "lazyloadPlaceholderEnable": false,
+    "ignoreUploadUnusedFiles": true
+  },
+  "packOptions": {
+    "ignore": [
+      {
+        "type": "folder",
+        "value": "server"
+      },
+      {
+        "type": "folder",
+        "value": "scripts"
+      },
+      {
+        "type": "folder",
+        "value": "screenshots"
+      },
+      {
+        "type": "folder",
+        "value": ".autotool"
+      },
+      {
+        "type": "folder",
+        "value": ".npm-cache"
+      },
+      {
+        "type": "folder",
+        "value": "node_modules"
+      }
+    ]
+  },
+  "simulatorPluginLibVersion": {}
+}

@@ -1,0 +1,232 @@
+/* pages/room-detail */
+
+.detail-page {
+  padding-bottom: 200rpx;
+}
+.cover {
+  width: 100%;
+  height: 340rpx;
+  display: block;
+  background: #dfe5f2;
+}
+/* 信息卡：负边距上浮压在封面上，所以必须是**不透明白卡**，
+   否则深色标题会落在封面照片上被“挡住”（占位渐变图时代看不出问题）。 */
+.head-card {
+  margin: -40rpx 24rpx 0;
+  position: relative;
+  z-index: 1;
+  padding: 24rpx;
+  background: var(--c-white);
+  border-radius: var(--r-lg);
+  box-shadow: 0 6rpx 20rpx rgba(31, 36, 48, 0.08);
+}
+.line {
+  margin-top: 10rpx;
+}
+.tags {
+  margin-top: 16rpx;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+.desc {
+  margin-top: 18rpx;
+  font-size: 26rpx;
+  color: var(--c-text-sub);
+}
+.notice {
+  margin-top: 18rpx;
+  padding: 16rpx 20rpx;
+  background: #fff8e8;
+  border-radius: var(--r-md);
+  font-size: 24rpx;
+  color: #a06a10;
+}
+
+.sec {
+  margin: 24rpx 24rpx 0;
+  padding: 24rpx;
+  background: #fff;
+  border-radius: var(--r-lg);
+  box-shadow: 0 6rpx 20rpx rgba(31, 36, 48, 0.05);
+}
+
+/* 日期 chip */
+.date-scroll {
+  white-space: nowrap;
+}
+.date-row {
+  display: inline-flex;
+  padding: 4rpx 0 8rpx;
+}
+.date-chip {
+  width: 118rpx;
+  padding: 16rpx 0;
+  margin-right: 16rpx;
+  border-radius: var(--r-md);
+  background: #f5f7fb;
+  border: 2rpx solid var(--c-line);
+  text-align: center;
+  flex-shrink: 0;
+}
+.date-chip .d-label {
+  font-size: 24rpx;
+  color: var(--c-text-sub);
+}
+.date-chip .d-md {
+  font-size: 26rpx;
+  color: var(--c-text-weak);
+  margin-top: 4rpx;
+}
+.date-active {
+  background: var(--c-primary-weak);
+  border-color: var(--c-primary);
+}
+.date-active .d-label {
+  color: var(--c-primary);
+  font-weight: 700;
+}
+.date-active .d-md {
+  color: var(--c-primary);
+}
+
+/* 时段 */
+.slot-label {
+  margin: 14rpx 0 12rpx;
+}
+.slot-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+.slot-wrap .chip {
+  margin-right: 0;
+}
+
+/* 座位图：CSS Grid */
+.legend {
+  gap: 26rpx;
+  font-size: 22rpx;
+  color: var(--c-text-sub);
+  margin-bottom: 20rpx;
+}
+.lg {
+  gap: 10rpx;
+}
+.lg-box {
+  width: 26rpx;
+  height: 26rpx;
+  border-radius: 6rpx;
+}
+.lg-free {
+  background: #bfe8d4;
+  border: 2rpx solid var(--c-success);
+}
+.lg-reserved {
+  background: #dfe4ee;
+}
+.lg-mine {
+  background: #ffe3cc;
+  border: 2rpx solid var(--c-accent);
+}
+.lg-maint {
+  background: #f2d8d8;
+}
+.seat-podium {
+  height: 56rpx;
+  background: #eef2fb;
+  border-radius: 8rpx;
+  margin-bottom: 24rpx;
+  letter-spacing: 6rpx;
+}
+.seat-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr); /* 兜底值：真实列数由接口 seatCols 以内联样式下发 */
+  gap: 16rpx;
+}
+/* 座位多、列数密（≥7 列）时收紧字号与间距，保证座位号看得清 */
+.seat-grid-dense {
+  gap: 12rpx;
+}
+.seat-grid-dense .seat {
+  font-size: 18rpx;
+  border-radius: 10rpx;
+}
+.seat {
+  height: 64rpx;
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20rpx;
+  transition: transform 0.12s ease;
+}
+.seat-free {
+  background: #eefaf3;
+  border: 2rpx solid #8fd6b1;
+  color: #158a52;
+}
+.seat-reserved {
+  background: #e6eaf1;
+  color: #a2abba;
+}
+.seat-maintenance {
+  background: #f6e2e2;
+  color: #b06a6a;
+}
+.seat-mine {
+  background: #ffeadb;
+  border: 2rpx solid var(--c-accent);
+  color: #b25e17;
+}
+.seat-picked {
+  background: linear-gradient(135deg, #4c7cff, #1e43d8);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 700;
+  transform: scale(1.06);
+}
+.seat-tip {
+  margin-top: 18rpx;
+  text-align: center;
+}
+
+/* 底部操作条 */
+.pick-info .t-main {
+  font-weight: 600;
+}
+.submit-btn {
+  width: 260rpx;
+}
+
+/* 座位加载遮罩 */
+.seat-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 80;
+}
+
+.spinner {
+  width: 34rpx;
+  height: 34rpx;
+  border: 4rpx solid #d7deef;
+  border-top-color: var(--c-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.loading-block {
+  padding: 200rpx 0;
+  gap: 16rpx;
+}

@@ -1,0 +1,83 @@
+<!-- 我的预约：状态 tab + 左滑操作（滑动取消/删除，JS 交互③） + 下拉刷新 -->
+<view class="orders-page">
+  <scroll-view class="tabs-scroll" scroll-x="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+    <view class="chips-row">
+      <view
+        wx:for="{{tabs}}"
+        wx:key="key"
+        class="chip {{tabIndex === index ? 'chip-active' : ''}}"
+        data-index="{{index}}"
+        bindtap="onTabTap"
+      >{{item.label}}</view>
+    </view>
+  </scroll-view>
+
+  <view class="swipe-tip t-weak" wx:if="{{logged && list.length}}">
+    💡 左滑条目可「取消预约 / 删除记录」
+  </view>
+
+  <!-- 未登录：空态 + 去登录入口 -->
+  <empty-tip
+    wx:if="{{!logged}}"
+    text="登录后查看你的预约记录"
+    desc="预约提醒、取消改约都在这里"
+    btn-text="去登录"
+    bind:action="goLogin"
+  />
+
+  <block wx:elif="{{list.length > 0}}">
+    <view class="order-item" wx:for="{{list}}" wx:key="id">
+      <!-- 滑出的操作按钮（catchtap 阻止冒泡） -->
+      <view class="swipe-actions">
+        <view class="act act-view" catchtap="onView" data-index="{{index}}">详情</view>
+        <view class="act act-cancel" wx:if="{{item.status === 'pending'}}" catchtap="onCancel" data-index="{{index}}">取消预约</view>
+        <view class="act act-del" wx:elif="{{item.status === 'done' || item.status === 'canceled'}}" catchtap="onRemove" data-index="{{index}}">删除</view>
+        <view class="act act-disabled" wx:else>使用中</view>
+      </view>
+
+      <!-- 条目内容：touch 事件驱动左滑 -->
+      <view
+        class="swipe-content {{item.swiped ? 'swiped' : ''}}"
+        data-index="{{index}}"
+        hover-class="item-hover"
+        bindtouchstart="onTouchStart"
+        bindtouchmove="onTouchMove"
+        bindtouchend="onTouchEnd"
+        bindtap="onTapItem"
+      >
+        <view class="oi-head flex-between">
+          <view class="oi-name ellipsis">{{item.roomName}}</view>
+          <view class="flex">
+            <!-- 已到馆核销的订单在状态标签旁额外标记（复用全局 tag 样式） -->
+            <text class="tag tag-success" wx:if="{{item.checkedIn}}">已核销</text>
+            <status-tag status="{{item.status}}" />
+          </view>
+        </view>
+        <view class="oi-body flex-between">
+          <view class="flex-col oi-when">
+            <view class="oi-date">{{item.dateLabel}} {{item.startSlot}}-{{item.endSlot}}</view>
+            <view class="t-sub ellipsis">📍 {{item.campus}} {{item.building}} · {{item.seatNo}} 号座</view>
+          </view>
+          <view class="oi-hours flex-center">{{item.hours}}h</view>
+        </view>
+        <view class="oi-foot flex-between">
+          <text class="t-weak">单号 {{item.id}}</text>
+          <text class="t-weak">{{item.createdText}}</text>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <empty-tip
+    wx:elif="{{!loading}}"
+    text="该状态下暂无预约记录"
+    desc="去挑一个心仪的自习座位吧"
+    btn-text="去预约自习"
+    bind:action="goRooms"
+  />
+
+  <view wx:else class="loading-block flex-center">
+    <view class="spinner"></view>
+    <text class="t-weak">加载中…</text>
+  </view>
+</view>

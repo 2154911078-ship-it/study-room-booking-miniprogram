@@ -1,0 +1,102 @@
+/* pages/profile */
+
+.profile-page {
+  padding: 24rpx 24rpx 60rpx;
+}
+
+.p-hero {
+  background: linear-gradient(135deg, #3d6bff, #1e43d8);
+  border-radius: var(--r-lg);
+  padding: 36rpx 32rpx;
+  color: #fff;
+}
+.p-avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  border: 4rpx solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+}
+.p-name {
+  font-size: 36rpx;
+  font-weight: 700;
+  margin-left: 26rpx;
+}
+.p-id {
+  font-size: 24rpx;
+  opacity: 0.85;
+  margin-left: 26rpx;
+  margin-top: 8rpx;
+}
+.p-hero .flex-col {
+  padding-left: 6rpx;
+}
+.p-credit {
+  padding-left: 10rpx;
+}
+.cr-num {
+  font-size: 44rpx;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.cr-label {
+  font-size: 20rpx;
+  opacity: 0.8;
+}
+
+.p-stats {
+  background: #fff;
+  border-radius: var(--r-lg);
+  margin-top: 24rpx;
+  padding: 28rpx 0;
+  box-shadow: 0 6rpx 20rpx rgba(31, 36, 48, 0.05);
+}
+.p-stats .cell {
+  flex: 1;
+  display: flex;
+}
+.p-stats .num {
+  font-size: 38rpx;
+  font-weight: 700;
+  color: var(--c-text);
+}
+.p-stats .lab {
+  font-size: 22rpx;
+  color: var(--c-text-weak);
+  margin-top: 6rpx;
+}
+.vl {
+  width: 2rpx;
+  height: 56rpx;
+  background: var(--c-line);
+}
+
+.menu {
+  margin-top: 24rpx;
+  padding: 8rpx 28rpx;
+}
+.menu .list-row + .list-row {
+  margin-top: 0;
+  border-radius: 0;
+}
+.mi-ico {
+  font-size: 36rpx;
+  margin-right: 22rpx;
+}
+.row-hover {
+  background: #f7f8fc;
+}
+
+.logout-btn {
+  margin-top: 40rpx;
+}
+.logout-btn:not(.btn-primary) {
+  background: #fff;
+  color: var(--c-danger);
+  border: 2rpx solid #ffd6d6;
+}
+
+.src-note {
+  margin-top: 32rpx;
+}
