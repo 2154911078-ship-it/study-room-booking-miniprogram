@@ -78,9 +78,12 @@ async function init(opts) {
   // 3) 老库补列：huizixi.sql 只建新表，已有表不会自动长出新列（如 rooms.cover_card）
   const addedColumns = await ensureColumns();
 
+  // 3.1) 老库补索引（同 ensureColumns 思路：先查 information_schema 再决定是否 ALTER）
+  const addedIndexes = await ensureIndexes();
+
   // 4) 建表 + 写入数据（huizixi.sql 全程幂等，每次启动重放都不会产生重复数据）
   const statements = await runSqlFile(SQL_FILE);
-  return { pool: pool, statements: statements, addedColumns: addedColumns };
+  return { pool: pool, statements: statements, addedColumns: addedColumns, addedIndexes: addedIndexes };
 }
 
 /**
@@ -130,6 +133,35 @@ async function ensureColumns() {
     if (col.length) continue;
     await exec(c.ddl);
     added.push(c.table + "." + c.column);
+  }
+  return added;
+}
+
+/**
+ * 老库补索引：MySQL 没有 ADD INDEX IF NOT EXISTS，同样先查 information_schema 再决定。
+ * 座位互斥查询（同自习室 + 同日期 + 同座位 + 时段重叠）每次下单都要跑，靠这个索引兜住性能。
+ */
+const ADD_INDEXES = [
+  { table: "orders", name: "idx_orders_seat_slot",
+    ddl: "ALTER TABLE orders ADD INDEX idx_orders_seat_slot (room_id, reserve_date, seat_no, start_slot, end_slot)" }
+];
+
+async function ensureIndexes() {
+  const added = [];
+  for (const ix of ADD_INDEXES) {
+    const t = await query(
+      "SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? LIMIT 1",
+      [DB.database, ix.table]
+    );
+    if (!t.length) continue;
+    const exists = await query(
+      "SELECT 1 FROM information_schema.STATISTICS " +
+      "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ? LIMIT 1",
+      [DB.database, ix.table, ix.name]
+    );
+    if (exists.length) continue;
+    await exec(ix.ddl);
+    added.push(ix.table + "." + ix.name);
   }
   return added;
 }

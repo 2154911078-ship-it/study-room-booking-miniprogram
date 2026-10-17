@@ -95,8 +95,8 @@
     </view>
   </view>
 
-  <!-- 热门自习室（按「近 7 天 + 未来 7 天」有效预约数动态排序；复用 room-card 竖版形态，点击带 id 跳详情） -->
-  <section-head title="热门自习室" subtitle="按近期预约热度排序" more-text="查看全部" bind:more="goRooms" />
+  <!-- 热门自习室（复用 room-card 竖版形态，点击带 id 跳详情） -->
+  <section-head title="热门自习室" subtitle="今日可约" more-text="查看全部" bind:more="goRooms" />
   <scroll-view class="hot-scroll" scroll-x="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}" enable-flex="{{true}}">
     <view class="hot-list">
       <view class="hot-item" wx:for="{{hotRooms}}" wx:key="id">

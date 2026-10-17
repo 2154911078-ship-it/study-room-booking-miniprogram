@@ -50,7 +50,6 @@ function randHex(n) {
 
   let r = await call("GET", "/summary", null, false);
   check("GET /summary 返回聚合数据", r.json.code === 0 && r.json.data.openCount >= 5, r.json);
-  const openCount = (r.json.data || {}).openCount;
 
   r = await call("GET", "/announcements", null, false);
   check("GET /announcements 公告+轮播", r.json.code === 0 && r.json.data.list.length === 3, r.json);
@@ -63,45 +62,46 @@ function randHex(n) {
   check("登录成功并获得 token", r.json.code === 0 && !!token, r.json);
 
   r = await call("GET", "/user/profile");
-  check("profile 返回用户与统计", r.json.code === 0 && r.json.data.user.studentId === "20210101" &&
-    r.json.data.stats.rooms === openCount, r.json);
-
-  // 全量自习室：后面几项条数断言都按实际数据推导，管理员新增场地后不会误报
-  const all = await call("GET", "/rooms?page=1&pageSize=100", null, false);
-  const allRooms = (all.json.data || {}).list || [];
-  const totalAll = (all.json.data || {}).total;
+  check("profile 返回用户与统计", r.json.code === 0 && r.json.data.user.studentId === "20210101" && r.json.data.stats.rooms === 5, r.json);
 
   r = await call("GET", "/rooms?page=1&pageSize=6", null, false);
-  check("自习室分页（首页 6 条 + hasMore）", r.json.code === 0 &&
-    r.json.data.list.length === Math.min(6, totalAll) && r.json.data.hasMore === (totalAll > 6), r.json);
+  const totalAll = (r.json.data || {}).total;
+  check("自习室分页（6/8）", r.json.code === 0 && r.json.data.list.length === 6 && r.json.data.hasMore === true, r.json);
 
   r = await call("GET", "/rooms?page=2&pageSize=6", null, false);
-  check("第二页返回剩余条目", r.json.data.list.length === Math.max(0, totalAll - 6) &&
-    r.json.data.hasMore === false, r.json);
+  check("第二页返回剩余 2 条", r.json.data.list.length === 2 && r.json.data.hasMore === false, r.json);
 
-  const eastCount = allRooms.filter((x) => x.campus === "东校区").length;
   r = await call("GET", "/rooms?campus=" + encodeURIComponent("东校区"), null, false);
-  check("校区筛选", r.json.data.total === eastCount, r.json);
+  check("校区筛选", r.json.data.total === 3, r.json);
 
-  const mingliCount = allRooms.filter((x) => (x.name + x.building + x.campus).indexOf("明理楼") >= 0).length;
   r = await call("GET", "/rooms?keyword=" + encodeURIComponent("明理楼"), null, false);
-  check("关键词搜索", r.json.data.total === mingliCount, r.json);
+  check("关键词搜索", r.json.data.total === 2, r.json);
 
   const date = nextDate();
   r = await call("GET", "/rooms/r1?date=" + date + "&start=09:00&end=12:00");
   const seats = (r.json.data || {}).seats || [];
+  // 座位图席数 = 自习室真实容量（r1 capacity=40）
   const freeSeat = seats.find((s) => s.status === "free");
-  const cap = ((r.json.data || {}).room || {}).capacity;
-  const cols = (r.json.data || {}).seatCols;
-  check("详情座位数=容量（列数自适应 5-8）", r.json.code === 0 && seats.length === cap &&
-    cols >= 5 && cols <= 8 && !!freeSeat, { cap: cap, len: seats.length, cols: cols });
+  check("详情座位图席数等于容量 40", r.json.code === 0 && seats.length === 40 && !!freeSeat, r.json);
 
   r = await call("POST", "/orders", { roomId: "r1", date: date, startSlot: "09:00", endSlot: "12:00", seatNo: freeSeat.no });
   const newId = (r.json.data || {}).id;
   check("创建预约成功", r.json.code === 0 && !!newId && r.json.data.status === "pending", r.json);
 
+  // P0 回归要点：同一座位被别人订走后，第二个人必须订不到（旧实现用 hash 占位，这里会同时成功）
+  const tokenBackup = token;
+  r = await call("POST", "/user/login", { studentId: "20210102", password: "123456" }, false);
+  const token2 = (r.json.data || {}).token || "";
+  token = token2;
+  r = await call("POST", "/orders", { roomId: "r1", date: date, startSlot: "09:30", endSlot: "11:00", seatNo: freeSeat.no });
+  check("他人重复预订同一座位时段被拦截", r.json.code !== 0 && /已被占用|刚刚被他人/.test(r.json.message || ""), r.json);
+  r = await call("GET", "/rooms/r1?date=" + date + "&start=09:00&end=12:00", null, false);
+  const seatView = ((r.json.data || {}).seats || []).find((s) => s.no === freeSeat.no);
+  check("座位图同步显示该座位已被占用", seatView && seatView.status !== "free", seatView);
+  token = tokenBackup;
+
   r = await call("POST", "/orders", { roomId: "r1", date: date, startSlot: "10:00", endSlot: "11:00", seatNo: (seats.filter((s) => s.status === "free" && s.no !== freeSeat.no)[0] || {}).no });
-  check("重叠时段重复下单被拦截", r.json.code !== 0, r.json);
+  check("本人重叠时段重复下单被拦截", r.json.code !== 0, r.json);
 
   r = await call("GET", "/orders?status=pending");
   check("待使用列表含新订单", r.json.code === 0 && r.json.data.list.some((o) => o.id === newId), r.json);

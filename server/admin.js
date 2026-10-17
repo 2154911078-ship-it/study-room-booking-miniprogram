@@ -115,13 +115,15 @@ async function overview() {
     perRoom.set(r.roomId, Number(r.n));
   });
 
-  // 空闲座位按「当前时段真实占座」算（与小程序端同一口径）
-  const usedNow = await d.usedSeatsNow();
+  // 与小程序端同源：剩余座位由当日真实订单按时段实时算出（一次查询覆盖全部自习室）
+  const busyMap = await d.busyMapOf(d.todayStr());
   const rooms = d.getRooms().map(function (r) {
+    const slot = d.defaultSlotFor(r, d.todayStr());
     return {
       id: r.id, name: r.name, campus: r.campus, building: r.building, floor: r.floor,
       capacity: r.capacity, status: r.status, openText: d.openTextOf(r),
-      free: d.freeCountOf(r, usedNow), todayOrders: perRoom.get(r.id) || 0
+      free: d.countFreeSeats(r, d.busySetOf(busyMap, r.id, slot.start, slot.end), []),
+      todayOrders: perRoom.get(r.id) || 0
     };
   });
 

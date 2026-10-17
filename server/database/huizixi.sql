@@ -107,6 +107,9 @@ CREATE TABLE IF NOT EXISTS banners (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='首页轮播表';
 
 -- 6. 预约订单（含线下签到核销字段）
+--    注意：这里刻意**不建** (room_id, reserve_date, seat_no, start_slot) 的唯一索引 ——
+--    ① 那样会挡不住"部分重叠"（9-12 与 10-11 算两条不同 key）；② 订单取消后同一座位同一时段应可再被预订。
+--    座位互斥由 server/data.js 在事务内 SELECT ... FOR UPDATE 复核保证（见 createOrder）。
 CREATE TABLE IF NOT EXISTS orders (
   id           VARCHAR(32) NOT NULL              COMMENT '订单号 HZX…',
   user_id      VARCHAR(20) NOT NULL              COMMENT '预约人学号',
@@ -125,6 +128,7 @@ CREATE TABLE IF NOT EXISTS orders (
   UNIQUE KEY uk_orders_checkin_code (checkin_code),
   KEY idx_orders_user_date (user_id, reserve_date),
   KEY idx_orders_room_date (room_id, reserve_date),
+  KEY idx_orders_seat_slot (room_id, reserve_date, seat_no, start_slot, end_slot),
   KEY idx_orders_checkin (checked_in_at),
   CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users (student_id) ON DELETE CASCADE,
   CONSTRAINT fk_orders_room FOREIGN KEY (room_id) REFERENCES rooms (id)

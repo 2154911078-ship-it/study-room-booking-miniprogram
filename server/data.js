@@ -17,33 +17,13 @@ const db = require("./db");
 const { WX } = require("./config");
 
 /**
- * 座位图规模：不再写死 4×5，而是由教室的 capacity（容纳人数）决定 ——
- * 容量多少就排多少座位，列数自适应（5–8 列，尽量接近方形且保证手机上一格能点准），
- * 行数 = ceil(座位数 / 列数)。座位号位数也随总席数扩展：≤99 用 2 位（A-08），≥100 用 3 位（A-108）。
+ * 座位图布局：列数固定 5（与 pages/room-detail WXSS 的 grid-template-columns: repeat(5,1fr) 对齐），
+ * 行数由自习室真实容量 rooms.capacity 推导 —— 不再写死 20 席。
  */
-const SEAT_MIN_COLS = 5;
-const SEAT_MAX_COLS = 8;
-const SEAT_MAX_TOTAL = 500; // 与管理台「容量 1-500」的校验上限一致
+const SEAT_COLS = 5;
 
-/** 该教室的座位总数 = 容量（夹在 1-500 之间，容错脏数据） */
-function seatTotalOf(room) {
-  const n = parseInt(room && room.capacity, 10);
-  if (!(n > 0)) return SEAT_MIN_COLS * 4; // 容量缺失时退回 20 席，避免整页空掉
-  return Math.min(SEAT_MAX_TOTAL, Math.max(1, n));
-}
-
-/** 列数自适应：5-8 列，取接近 √n 的整数（20 席 → 5 列，40 席 → 7 列，99 席 → 8 列） */
-function seatColsOf(total) {
-  const cols = Math.ceil(Math.sqrt(total || 1));
-  return Math.min(SEAT_MAX_COLS, Math.max(SEAT_MIN_COLS, cols));
-}
-
-/** 座位图布局：{ total, cols, rows } */
-function seatLayoutOf(room) {
-  const total = seatTotalOf(room);
-  const cols = seatColsOf(total);
-  return { total: total, cols: cols, rows: Math.ceil(total / cols) };
-}
+/** 未指定时段时（列表 / 概览 / 管理台）统计"当前剩余"采用的默认时长 */
+const DEFAULT_SLOT_HOURS = 2;
 
 /* ============================ 纯函数工具 ============================ */
 
@@ -93,107 +73,111 @@ function publicUser(u) {
   };
 }
 
-/** 座位号：前缀 + 序号（总席数 ≤99 用两位 A-08，≥100 用三位 A-108），与管理台容量保持一致 */
+/**
+ * 座位编号 / 容量：一律以 rooms.capacity 与 rooms.seat_prefix 为准。
+ * 之前固定 4×5=20 席、且与 capacity（18~80）脱节，属于"编造的座位"。
+ */
+function seatCountOf(room) {
+  const n = Number(room && room.capacity) || 0;
+  return n > 0 ? n : SEAT_COLS;
+}
+
+/** 第 idx 个座位号（0 基）→ 'A-08' */
 function seatNoOf(room, idx) {
-  const n = idx + 1;
-  const s = n < 10 ? "0" + n : String(n);
-  const no = seatTotalOf(room) >= 100 && n < 100 ? "0" + s : s;
-  return room.seatPrefix + "-" + no;
+  return (room.seatPrefix || "A") + "-" + pad2(idx + 1);
 }
 
-/** 座位号 → 该教室座位下标（0 基）；不属于该教室或超出容量返回 -1 */
+/** 座位图行数（列数固定 SEAT_COLS） */
+function seatRowsOf(room) {
+  return Math.ceil(seatCountOf(room) / SEAT_COLS);
+}
+
+/** 座位号 → 下标；前缀不符或超出该自习室容量时返回 -1（挡掉 'A-99' 这类越界编号） */
 function seatIndexOf(room, seatNo) {
-  const m = String(seatNo || "").trim().toUpperCase().match(/^([A-Z]{1,2})-(\d{1,3})$/);
-  if (!m) return -1;
-  if (m[1] !== String(room.seatPrefix || "").toUpperCase()) return -1;
-  const n = parseInt(m[2], 10);
-  if (!(n >= 1) || n > seatTotalOf(room)) return -1;
-  return n - 1;
-}
-
-/** 座位号是否属于这间教室：前缀一致 + 序号在容量范围内（拦住乱传的座位号） */
-function isValidSeatNo(room, seatNo) {
-  return seatIndexOf(room, seatNo) >= 0;
+  const parts = String(seatNo || "").trim().split("-");
+  const prefix = String(room.seatPrefix || "").toUpperCase();
+  if (parts.length !== 2 || String(parts[0]).toUpperCase() !== prefix) return -1;
+  const idx = parseInt(parts[1], 10) - 1;
+  if (!(idx >= 0) || idx >= seatCountOf(room)) return -1;
+  return idx;
 }
 
 /**
- * 该教室某天某时段被谁占了座 —— 全部来自 orders 表的真实有效订单：
- *   taken：被占用的座位号集合（派生态 pending / using，已完成与已取消不算占座）
- *   mine ：其中属于当前登录学生的座位号集合
- * 只有时段与查询窗口有重叠的订单才算占用，所以同一座位不同时段可被不同人预约。
+ * 未被指定时段时（列表 / 概览 / 管理台）的统计口径：
+ * 今天取"当前整点所属时段"，其它日期取开放首时段，统一 DEFAULT_SLOT_HOURS 小时。
+ * @returns {{start:string, end:string}} 'HH:MM'
  */
-async function seatOccupancy(room, date, start, end, studentId) {
-  // 只取占座判定需要的字段（订单人 user_id 用于标记「我的」；mapOrder 不透出 userId，故这里单独查）
-  const rows = await db.query(
-    "SELECT seat_no AS seatNo, user_id AS userId, status AS rawStatus, " +
+function defaultSlotFor(room, date) {
+  const isToday = !date || date === todayStr();
+  const lastStart = Math.max(room.openFrom, room.openTo - DEFAULT_SLOT_HOURS);
+  let h = isToday ? new Date().getHours() : room.openFrom;
+  h = Math.min(Math.max(h, room.openFrom), lastStart);
+  return {
+    start: pad2(h) + ":00",
+    end: pad2(Math.min(h + DEFAULT_SLOT_HOURS, room.openTo)) + ":00"
+  };
+}
+
+/**
+ * 已被占用的座位：某天所有未被取消的订单（含本人，调用方再用 ownSeats 区分"我的"）
+ * @returns {Promise<Map<string, Array<{seatNo:string,startSlot:string,endSlot:string}>>>}
+ */
+async function busyMapOf(date, conn) {
+  const sql =
+    "SELECT room_id AS roomId, seat_no AS seatNo, " +
     "DATE_FORMAT(start_slot, '%H:%i') AS startSlot, DATE_FORMAT(end_slot, '%H:%i') AS endSlot " +
-    "FROM orders WHERE room_id = ? AND reserve_date = ?",
-    [room.id, date]
-  );
-  const taken = new Set();
-  const mine = new Set();
-  const sid = studentId === undefined || studentId === null ? "" : String(studentId);
-  rows.forEach(function (o) {
-    const status = deriveStatus({
-      status: o.rawStatus,
-      date: date,
-      startSlot: o.startSlot,
-      endSlot: o.endSlot
-    });
-    if (["pending", "using"].indexOf(status) < 0) return;
-    if (!slotsOverlap(o.startSlot, o.endSlot, start, end)) return;
-    // 统一成该教室的规范座位号（历史/非规范写法也能对上座位图）
-    const idx = seatIndexOf(room, o.seatNo);
-    const no = idx >= 0 ? seatNoOf(room, idx) : String(o.seatNo || "").trim().toUpperCase();
-    taken.add(no);
-    if (sid && String(o.userId) === sid) mine.add(no);
+    "FROM orders WHERE reserve_date = ? AND status <> 'canceled'";
+  const rows = conn ? await db.queryOn(conn, sql, [date]) : await db.query(sql, [date]);
+  const map = new Map();
+  rows.forEach(function (r) {
+    if (!map.has(r.roomId)) map.set(r.roomId, []);
+    map.get(r.roomId).push(r);
   });
-  return { taken: taken, mine: mine };
+  return map;
+}
+
+/** 从上一步的占用表里，按时段重叠取出某个自习室此刻被占的座位号集合 */
+function busySetOf(busyMap, roomId, start, end) {
+  const set = new Set();
+  const list = busyMap.get(roomId) || [];
+  list.forEach(function (o) {
+    if (slotsOverlap(o.startSlot, o.endSlot, start, end)) set.add(o.seatNo);
+  });
+  return set;
 }
 
 /**
- * 座位图：座位数 = 教室容量（列数自适应），默认全空闲，只有被真实订单占用的才是「已约」，
- * 本人占的是「我的」，整间教室维护中则全部「停用」，管理员标记「已约满」的房间也全部显示已约。
- * 新开的教室没有任何订单 → 全部空闲，不再有随机占座。
+ * 座位状态：free / reserved / maintenance / mine
+ * 全部由真实订单推导，不再有随机占位。
+ * @param {Set<string>} busySet 该时段已被占用的座位号
+ * @param {string[]} ownSeats  本人该时段已占座位号（展示为 mine）
  */
-function buildSeats(room, taken, mine) {
+function seatStatusFor(room, idx, busySet, ownSeats) {
+  const no = seatNoOf(room, idx);
+  if (ownSeats && ownSeats.indexOf(no) >= 0) return { no: no, status: "mine" };
+  if (room.status === "maintenance") return { no: no, status: "maintenance" };
+  if (room.status === "full") return { no: no, status: "reserved" }; // 场馆整体标记为已约满
+  if (busySet && busySet.has(no)) return { no: no, status: "reserved" };
+  return { no: no, status: "free" };
+}
+
+/** 全部座位的实时状态（座位图数据源） */
+function seatViewsOf(room, busySet, ownSeats) {
+  const total = seatCountOf(room);
   const seats = [];
-  const t = taken || new Set();
-  const m = mine || new Set();
-  const total = seatTotalOf(room);
-  for (let i = 0; i < total; i++) {
-    const no = seatNoOf(room, i);
-    let status = "free";
-    if (room.status === "maintenance") status = "maintenance";
-    else if (m.has(no)) status = "mine";
-    else if (t.has(no)) status = "reserved";
-    else if (room.status === "full") status = "reserved";
-    seats.push({ no: no, status: status });
-  }
+  for (let i = 0; i < total; i++) seats.push(seatStatusFor(room, i, busySet, ownSeats));
   return seats;
 }
 
-/** 空闲座位数 = 座位总数（=容量）− 当前时段该教室被有效订单占用的座位数 */
-function freeCountOf(room, usedNow) {
+/** 真实剩余座位数：与上面的座位图完全同源（列表卡片、首页概览、管理台共用） */
+function countFreeSeats(room, busySet, ownSeats) {
   if (room.status !== "open") return 0;
-  const used = (usedNow && usedNow.get(room.id)) || 0;
-  return Math.max(0, seatTotalOf(room) - used);
-}
-
-/** 当前整点各教室被占用的座位数（roomId → 去重座位数）；一次查询供列表/概览/管理台共用 */
-async function usedSeatsNow() {
-  const hour = pad2(new Date().getHours()) + ":00";
-  const rows = await db.query(
-    "SELECT room_id AS roomId, COUNT(DISTINCT seat_no) AS used FROM orders " +
-    "WHERE status <> 'canceled' AND reserve_date = CURDATE() " +
-    "AND start_slot <= ? AND end_slot > ? GROUP BY room_id",
-    [hour, hour]
-  );
-  const m = new Map();
-  rows.forEach(function (r) {
-    m.set(r.roomId, Number(r.used) || 0);
-  });
-  return m;
+  const total = seatCountOf(room);
+  let n = 0;
+  for (let i = 0; i < total; i++) {
+    if (seatStatusFor(room, i, busySet, ownSeats).status === "free") n++;
+  }
+  return n;
 }
 
 function openTextOf(room) {
@@ -359,6 +343,7 @@ async function init(opts) {
   const info = await db.health();
   info.sqlStatements = (dbInfo && dbInfo.statements) || 0;
   info.addedColumns = (dbInfo && dbInfo.addedColumns) || [];
+  info.addedIndexes = (dbInfo && dbInfo.addedIndexes) || [];
   info.codesFilled = codesFilled;
   return info;
 }
@@ -600,9 +585,13 @@ async function profile(user) {
 
 async function summary(user) {
   const openRooms = roomList.filter(function (r) { return r.status === "open"; });
-  const usedNow = await usedSeatsNow();
+  const date = todayStr();
+  const busyMap = await busyMapOf(date);
   let free = 0;
-  openRooms.forEach(function (r) { free += freeCountOf(r, usedNow); });
+  openRooms.forEach(function (r) {
+    const slot = defaultSlotFor(r, date);
+    free += countFreeSeats(r, busySetOf(busyMap, r.id, slot.start, slot.end), []);
+  });
 
   let todayOrders = 0;
   if (user) {
@@ -628,9 +617,9 @@ async function announcements() {
 }
 
 /**
- * 自习室预约热度表：roomId → 「近 7 天 + 未来 7 天」窗口内的有效预约单数（已取消不计）。
- * 首页「热门自习室」按它排序：谁被约得多谁靠前，下单/取消后热度即时变化，
- * 过期订单滑出窗口后热度自然回落 —— 排序随真实预约行为动态变化，不再依赖人工配置。
+ * 自习室「预约热度」：滚动窗口内的有效预约单数（GROUP BY 一条 SQL，不用循环）
+ *   窗口 = 过去 6 天 ~ 未来 7 天（含今天，共 14 天）
+ *   "有效" = status <> 'canceled'，即已取消的单不计入
  */
 async function roomHeatMap() {
   const rows = await db.query(
@@ -657,9 +646,9 @@ async function listRooms(params) {
     list = list.filter(function (r) { return r.campus === campus; });
   }
   if (keyword) {
-    list = list.filter(function (r) {
+    list = list.filter(function (r) {  // 遍历 list 中每条记录 r只保留符合条件的
       return (r.name + r.building + r.campus).indexOf(keyword) >= 0;
-    });
+    });// 把筛选后的新数组重新赋给 list
   }
 
   // sort=hot：按预约热度降序；热度相同的保持 sort_no 原序（roomList 已按 sort_no 排好 + V8 稳定排序）
@@ -674,13 +663,16 @@ async function listRooms(params) {
   const page = parseInt(p.page, 10) || 1;
   const pageSize = parseInt(p.pageSize, 10) || 6;
   const total = list.length;
-  // 空闲座位按「当前时段真实占座」算：座位总数 − 此刻被有效订单占用的座位数
-  const usedNow = await usedSeatsNow();
+  // 剩余座位：与该房间此刻的真实订单一致（一次查询覆盖全部自习室，避免 N+1）
+  const listDate = p.date || todayStr();
+  const busyMap = await busyMapOf(listDate);
   const paged = list.slice((page - 1) * pageSize, page * pageSize).map(function (r) {
+    const slot = defaultSlotFor(r, listDate);
     const item = {
       id: r.id, name: r.name, campus: r.campus, building: r.building, floor: r.floor,
       capacity: r.capacity, cover: r.cover, coverCard: r.coverCard, tags: r.tags, status: r.status,
-      free: freeCountOf(r, usedNow), openText: openTextOf(r)
+      free: countFreeSeats(r, busySetOf(busyMap, r.id, slot.start, slot.end), []),
+      openText: openTextOf(r)
     };
     if (heat) item.hot = heat.get(r.id) || 0; // 热度值随热门排序一并下发（数据字段，卡片上不展示）
     return item;
@@ -699,10 +691,23 @@ async function roomDetail(id, query, user) {
   const start = q.start || pad2(Math.max(room.openFrom, 8)) + ":00";
   const end = q.end || pad2(Math.min(room.openTo, hourOf(start) + 3)) + ":00";
 
-  // 座位图完全按真实订单生成：该教室当天、与该时段重叠的 pending/using 订单才算占座
-  const occ = await seatOccupancy(room, date, start, end, user && user.studentId);
-  const seats = buildSeats(room, occ.taken, occ.mine);
-  const layout = seatLayoutOf(room); // 座位数=容量，列数自适应，行数由前两者算出
+  // 本人此时段已占座位（真库查询，标记为 mine）
+  let ownSeats = [];
+  if (user) {
+    const mine = (await db.query(
+      ORDER_SELECT + "WHERE o.user_id = ? AND o.room_id = ? AND o.reserve_date = ?",
+      [user.studentId, room.id, date]
+    )).map(mapOrder);
+    ownSeats = mine
+      .filter(function (o) {
+        if (["pending", "using"].indexOf(o.status) < 0) return false;
+        return slotsOverlap(o.startSlot, o.endSlot, start, end);
+      })
+      .map(function (o) { return o.seatNo; });
+  }
+
+  const busySet = busySetOf(await busyMapOf(date), room.id, start, end);
+  const seats = seatViewsOf(room, busySet, ownSeats);
 
   return {
     room: {
@@ -712,8 +717,8 @@ async function roomDetail(id, query, user) {
       tags: room.tags, cover: room.cover, coverCard: room.coverCard, desc: room.desc, notice: room.notice
     },
     seats: seats,
-    seatRows: layout.rows,
-    seatCols: layout.cols,
+    seatRows: seatRowsOf(room),
+    seatCols: SEAT_COLS,
     query: { date: date, start: start, end: end }
   };
 }
@@ -745,18 +750,20 @@ async function createOrder(user, body) {
   })[0];
   if (conflict) fail(400, "该时段您已有预约（" + conflict.id + "），请勿重复下单");
 
-  // 座位校验：座位号必须属于该教室（并按容量归一成规范写法），且该时段没有别人的有效订单占着它
+  // 座位号合法性：必须属于该自习室且落在容量范围内（挡掉 A-99 这类越界编号）
   const seatIdx = seatIndexOf(room, b.seatNo);
-  if (seatIdx < 0) fail(400, "座位号不存在，请重新选择");
-  const seatNo = seatNoOf(room, seatIdx);
-  const occ = await seatOccupancy(room, b.date, b.startSlot, b.endSlot, user.studentId);
-  if (occ.taken.has(seatNo)) fail(400, "座位 " + seatNo + " 该时段已被预约，换一个试试");
+  if (seatIdx < 0) fail(400, "座位号 " + b.seatNo + " 不属于该自习室");
+
+  // 座位是否被占用的预检（正式拦截在事务里加行锁复核，这里只为更快给出提示）
+  const previewBusy = busySetOf(await busyMapOf(b.date), room.id, b.startSlot, b.endSlot);
+  const st = seatStatusFor(room, seatIdx, previewBusy, []);
+  if (st.status !== "free") fail(400, "座位 " + b.seatNo + " 该时段已被占用，换一个试试");
 
   const order = {
     id: nextOrderId(b.date),
     userId: user.studentId,
     roomId: room.id,
-    seatNo: seatNo,
+    seatNo: b.seatNo,
     date: b.date,
     startSlot: b.startSlot,
     endSlot: b.endSlot,
@@ -769,6 +776,15 @@ async function createOrder(user, body) {
     order.checkinCode = await uniqueCheckinCode();
     try {
       await db.tx(async function (conn) {
+        // 事务内加行锁复核座位占用，避免两人同时抢同一个座位都成功
+        const taken = await db.queryOn(conn,
+          "SELECT id FROM orders WHERE room_id = ? AND reserve_date = ? AND seat_no = ? " +
+          "AND status <> 'canceled' AND start_slot < CAST(? AS TIME) AND end_slot > CAST(? AS TIME) " +
+          "LIMIT 1 FOR UPDATE",
+          [order.roomId, order.date, order.seatNo, order.endSlot, order.startSlot]
+        );
+        if (taken.length) fail(400, "座位 " + order.seatNo + " 刚刚被他人预约，请重新选择座位");
+
         await db.execOn(conn,
           "INSERT INTO orders (id, user_id, room_id, seat_no, reserve_date, start_slot, end_slot, " +
           "status, remark, checkin_code) VALUES (?,?,?,?,?,?,?,'pending',?,?)",
@@ -926,9 +942,7 @@ async function markAllRead(user) {
 
 module.exports = {
   // 常量
-  seatTotalOf,
-  seatColsOf,
-  seatLayoutOf,
+  SEAT_COLS,
   // 查询片段与行映射（供 server/admin.js 复用）
   ORDER_SELECT,
   MESSAGE_SELECT,
@@ -945,9 +959,16 @@ module.exports = {
   slotsOverlap,
   deriveStatus,
   publicUser,
+  seatStatusFor,
+  seatCountOf,
   seatNoOf,
-  freeCountOf,
-  usedSeatsNow,
+  seatRowsOf,
+  seatIndexOf,
+  seatViewsOf,
+  defaultSlotFor,
+  busyMapOf,
+  busySetOf,
+  countFreeSeats,
   openTextOf,
   fail,
   // 只读缓存

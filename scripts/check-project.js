@@ -358,12 +358,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   detail.loadAll();
   await sleep(400);
   check("详情：room/r1 加载成功", detail.data.room && detail.data.room.id === "r1");
-  check("详情：座位数=容量（列数自适应 5-8）", detail.data.seats.length === detail.data.room.capacity &&
-    detail.data.seatCols >= 5 && detail.data.seatCols <= 8, {
-    seats: detail.data.seats.length,
-    capacity: detail.data.room.capacity,
-    cols: detail.data.seatCols
-  });
+  // 座位图席数 = 自习室真实容量（r1 capacity=40），不再是写死的 20
+  check("详情：座位图席数等于自习室容量", detail.data.seats.length === detail.data.room.capacity,
+    detail.data.seats.length);
   check("详情：默认时段可用", !!detail.data.start && !!detail.data.end);
   // 关键：切到“明天”，避免深夜运行测试时当天时段已过被派生为“已完成”
   detail.onDateTap({ currentTarget: { dataset: { index: 1 } } });
@@ -382,21 +379,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     end: detail.data.end,
     slotError: detail.data.slotError
   });
+  // 种子数据里"明天 13:00-16:00 的 A-12"属于另一位同学：座位图应真实显示为已约
+  check("详情：他人已预约的座位显示为已约",
+    detail.data.seats.some((x) => x.no === "A-12" && x.status === "reserved"), detail.data.seats.length);
   const free = detail.data.seats.find((x) => x.status === "free");
   detail.pickSeat({ currentTarget: { dataset: { no: free.no, status: free.status } } });
   check("详情：点选空闲座位", detail.data.selectedSeat === free.no);
-  // 座位图以真实订单为准（新教室全空闲，不再有随机占座）：借另一位同学的名义占一个座位来验证「已约」不可点
-  const rivalSeat = detail.data.seats.find((s) => s.status === "free" && s.no !== free.no);
-  const ldb = storage.hzx_localdb_v1 || (storage.hzx_localdb_v1 = { orders: [] });
-  ldb.orders.push({
-    id: "HZXRIVAL01", userId: "20210102", roomId: "r1", seatNo: rivalSeat.no,
-    date: detail.data.dates[1].full, startSlot: "13:00", endSlot: "16:00",
-    status: "pending", createdAt: Date.now(), remark: ""
-  });
-  detail.fetchSeats();
-  await sleep(300);
   const taken = detail.data.seats.find((x) => x.status === "reserved");
-  check("详情：他人订单占用的座位显示为已约", !!taken && taken.no === rivalSeat.no, taken && taken.no);
   detail.pickSeat({ currentTarget: { dataset: { no: taken.no, status: taken.status } } });
   check("详情：不可点已约座位", detail.data.selectedSeat === free.no);
   detail.submit();

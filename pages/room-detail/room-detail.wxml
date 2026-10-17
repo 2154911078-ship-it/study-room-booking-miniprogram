@@ -61,9 +61,9 @@
     <view class="form-error" wx:if="{{slotError}}">{{slotError}}</view>
   </view>
 
-  <!-- 座位平面图（CSS Grid 布局：座位数=容量，列数 5-8 自适应，由接口 seatCols 下发） -->
+  <!-- 座位平面图（CSS Grid 布局） -->
   <view class="sec">
-    <section-head title="选择座位" subtitle="{{seats.length}} 席 · 该时段实时座位图" />
+    <section-head title="选择座位" subtitle="该时段实时座位图" />
     <view class="legend flex">
       <view class="lg flex"><view class="lg-box lg-free"></view><text>空闲</text></view>
       <view class="lg flex"><view class="lg-box lg-reserved"></view><text>已约</text></view>
@@ -71,7 +71,7 @@
       <view class="lg flex"><view class="lg-box lg-maint"></view><text>停用</text></view>
     </view>
     <view class="seat-podium flex-center"><text class="t-weak">— 讲台 —</text></view>
-    <view class="seat-grid {{seatCols >= 7 ? 'seat-grid-dense' : ''}}" style="grid-template-columns: repeat({{seatCols}}, 1fr)">
+    <view class="seat-grid">
       <view
         wx:for="{{seats}}"
         wx:key="no"

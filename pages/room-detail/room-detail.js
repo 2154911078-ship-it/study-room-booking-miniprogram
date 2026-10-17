@@ -20,8 +20,6 @@ Page({
     room: null,
     statusMeta: ROOM_STATUS.open,
     seats: [],
-    seatRows: 4, // 座位图行数（座位数=容量，行数由接口下发）
-    seatCols: 5, // 座位图列数：5-8 列自适应，真值来自接口 res.seatCols
     dates: [],
     dateIndex: 0,
     starts: [],
@@ -77,8 +75,6 @@ Page({
           room,
           statusMeta: ROOM_STATUS[room.status] || ROOM_STATUS.open,
           seats: res.seats,
-          seatRows: res.seatRows || 4,
-          seatCols: res.seatCols || 5,
           starts,
           ends,
           start,
@@ -107,8 +103,6 @@ Page({
         ).length;
         this.setData({
           seats: res.seats,
-          seatRows: res.seatRows || this.data.seatRows,
-          seatCols: res.seatCols || this.data.seatCols,
           selectedSeat: stillValid ? d.selectedSeat : "",
           loadingSeats: false,
           duration: fmt.hourOf(d.end) - fmt.hourOf(d.start)

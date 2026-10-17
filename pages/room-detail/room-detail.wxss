@@ -141,16 +141,8 @@
 }
 .seat-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr); /* 兜底值：真实列数由接口 seatCols 以内联样式下发 */
+  grid-template-columns: repeat(5, 1fr);
   gap: 16rpx;
-}
-/* 座位多、列数密（≥7 列）时收紧字号与间距，保证座位号看得清 */
-.seat-grid-dense {
-  gap: 12rpx;
-}
-.seat-grid-dense .seat {
-  font-size: 18rpx;
-  border-radius: 10rpx;
 }
 .seat {
   height: 64rpx;

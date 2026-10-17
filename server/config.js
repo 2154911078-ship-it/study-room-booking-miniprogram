@@ -1,8 +1,8 @@
 /**
  * server/config.js —— 后端运行配置（数据库 / 端口）
  *
- * 默认连接本机 MySQL：root @ 127.0.0.1:3306，库名 huizixi。
- * 数据库密码不写进代码，通过环境变量 DB_PASSWORD 提供，例如：
+ * 默认连接本机 MySQL：root / 123456 @ 127.0.0.1:3306，库名 huizixi。
+ * 需要改动时用环境变量覆盖，无需改代码，例如：
  *   $env:DB_PASSWORD="你的密码"; node server/server.js
  *   $env:DB_HOST="192.168.1.10"; $env:DB_PORT="3307"; node server/server.js
  */

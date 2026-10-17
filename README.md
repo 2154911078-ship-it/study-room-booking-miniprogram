@@ -7,6 +7,26 @@
 
 ---
 
+## 运行截图
+
+### 小程序端（微信开发者工具模拟器实拍，数据来自 Node.js 后端）
+
+| 首页 | 自习室列表 | 自习室详情 | 实时座位图 |
+|:--:|:--:|:--:|:--:|
+| <img src="screenshots/01-home.png" width="200"> | <img src="screenshots/02-rooms.png" width="200"> | <img src="screenshots/03-room-detail.png" width="200"> | <img src="screenshots/03b-seat-map.png" width="200"> |
+| **登录** | **我的预约** | **消息中心** | **个人中心** |
+| <img src="screenshots/04-login.png" width="200"> | <img src="screenshots/05-orders.png" width="200"> | <img src="screenshots/06-messages.png" width="200"> | <img src="screenshots/07-profile.png" width="200"> |
+
+### 管理后台（浏览器打开 http://127.0.0.1:3000/ ，读取 MySQL 实时数据）
+
+| 登录 | 概览看板 | 场地管理 |
+|:--:|:--:|:--:|
+| <img src="screenshots/admin-00-login.png" width="330"> | <img src="screenshots/admin-01-overview.png" width="330"> | <img src="screenshots/admin-02-rooms.png" width="330"> |
+| **预约管理** | **用户管理** | **登录会话** |
+| <img src="screenshots/admin-03-orders.png" width="330"> | <img src="screenshots/admin-04-users.png" width="330"> | <img src="screenshots/admin-05-sessions.png" width="330"> |
+
+---
+
 ## 一、快速运行
 
 ### 1. 准备 MySQL（默认 root / 123456 @ 127.0.0.1:3306，库名 huizixi）

@@ -121,12 +121,7 @@ async function shot(mini, name) {
   }, 8000, "room detail r5");
   check("详情页接收 id=r5 并渲染服务端数据", !!(page && (await page.data("room")).campus === "南校区"));
   const seats = await page.data("seats");
-  const detailRoom = await page.data("room");
-  check("座位数=容量且列数自适应（服务端下发）", seats && seats.length === detailRoom.capacity &&
-    (await page.data("seatCols")) >= 5 && (await page.data("seatCols")) <= 8, {
-    seats: seats && seats.length,
-    capacity: detailRoom.capacity
-  });
+  check("座位图席数等于容量 50（r5，服务端下发）", seats && seats.length === 50, seats && seats.length);
   const freeSeat = (seats || []).find((s) => s.status === "free");
   await page.callMethod("pickSeat", { currentTarget: { dataset: { no: freeSeat.no, status: freeSeat.status } } });
   check("点选空闲座位 " + freeSeat.no, (await page.data("selectedSeat")) === freeSeat.no);
